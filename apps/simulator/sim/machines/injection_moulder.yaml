@@ -1,0 +1,98 @@
+# 120 t hydraulic injection moulding machine, 35 kW connected load (drive + barrel heaters).
+asset_type: injection_moulder
+idle_power_fraction: 0.1
+eta_nominal: 0.92
+power_factor_rated: 0.85
+base_reject_rate: 0.015
+power_noise: {std: 0.15, jitter_ms: 25}
+load_noise: {std: 0.3, jitter_ms: 25}
+params:
+  zone1_sp_c: 200.0
+  zone2_sp_c: 220.0
+  zone3_sp_c: 235.0
+  heater_sag: 0.12
+  heater_demand: 0.35
+  barrel_tau_s: 900.0
+  injection_pressure_bar: 1400.0
+  screw_pressure_loss: 0.2
+  clamp_force_kn: 1100.0
+  clamp_loss: 0.18
+components:
+  - code: barrel
+    name: Barrel heater bands
+    component_type: heater
+    health_weight: 0.9
+    process:
+      model: gamma
+      params: {life_h: 2000, cv: 0.2, load_exp: 0.0}
+    failure_mode:
+      code: heater_failure
+      name: Barrel heater band degradation
+      description: Heater elements lose output; zone temperatures sag below setpoint (nozzle zone first) and melt quality drops.
+      signature: {metrics: [barrel.zone3_temp, barrel.zone2_temp, power_kw], pattern: trend}
+      severity: 3
+      driver: barrel.zone3_temp
+      quality_impact: 0.2
+    sensors:
+      - {code: zone1_temp, name: Barrel zone 1 temperature, unit: °C, kind: temperature, min_valid: 0.0, max_valid: 400.0, warn_low: 190.0, alarm_low: 182.0,
+         noise: {std: 0.4, drift: 0.002, dropout_prob: 0.001, jitter_ms: 25}}
+      - {code: zone2_temp, name: Barrel zone 2 temperature, unit: °C, kind: temperature, min_valid: 0.0, max_valid: 400.0, warn_low: 208.0, alarm_low: 200.0,
+         noise: {std: 0.4, drift: 0.002, dropout_prob: 0.001, jitter_ms: 25}}
+      - {code: zone3_temp, name: Barrel zone 3 temperature, unit: °C, kind: temperature, min_valid: 0.0, max_valid: 400.0, warn_low: 222.0, alarm_low: 214.0,
+         noise: {std: 0.4, drift: 0.002, dropout_prob: 0.001, jitter_ms: 25}}
+  - code: screw
+    name: Screw and check ring
+    component_type: screw
+    health_weight: 1.0
+    process:
+      model: gamma
+      params: {life_h: 2400, cv: 0.2, load_exp: 1.0}
+    failure_mode:
+      code: screw_wear
+      name: Screw and check ring wear
+      description: Back-flow past a worn check ring lowers peak injection pressure and causes short shots.
+      signature: {metrics: [screw.injection_pressure], pattern: trend}
+      severity: 3
+      driver: screw.injection_pressure
+      quality_impact: 0.12
+      cycle_impact: 0.1
+    sensors:
+      - {code: injection_pressure, name: Peak injection pressure, unit: bar, kind: pressure, min_valid: 0.0, max_valid: 2500.0, warn_low: 1180.0, alarm_low: 1120.0,
+         noise: {std: 6.0, spike_prob: 0.001, dropout_prob: 0.001, jitter_ms: 25}}
+  - code: clamp
+    name: Clamp toggle mechanism
+    component_type: other
+    health_weight: 0.8
+    process:
+      model: wiener
+      params: {life_h: 2000, cv: 0.08, load_exp: 1.0}
+    failure_mode:
+      code: clamp_wear
+      name: Clamp toggle wear
+      description: Toggle pin and bush wear reduce achievable clamp force, producing flash on parts.
+      signature: {metrics: [clamp.force], pattern: trend}
+      severity: 2
+      driver: clamp.force
+      quality_impact: 0.15
+    sensors:
+      - {code: force, name: Clamp force, unit: kN, kind: other, min_valid: 0.0, max_valid: 1500.0, warn_low: 950.0, alarm_low: 900.0,
+         noise: {std: 4.0, dropout_prob: 0.001, jitter_ms: 25}}
+  - code: drive
+    name: Hydraulic drive motor
+    component_type: motor
+    health_weight: 0.8
+    process:
+      model: motor_efficiency
+      params: {life_h: 2800, eta0: 0.92, k: 0.12, cv: 0.15, load_exp: 2.0}
+    failure_mode:
+      code: motor_efficiency_loss
+      name: Drive motor efficiency loss
+      description: Drive efficiency declines; energy per shot and motor current rise at unchanged output.
+      signature: {metrics: [drive.cycle_energy, drive.current, power_kw], pattern: trend}
+      severity: 2
+      driver: drive.cycle_energy
+    sensors:
+      - {code: current, name: Drive motor current, unit: A, kind: current, min_valid: 0.0, max_valid: 120.0, warn_high: 62.0, alarm_high: 68.0,
+         noise: {std: 0.3, drift: 0.002, dropout_prob: 0.001, jitter_ms: 25}}
+      - {code: cycle_energy, name: Energy per cycle, unit: Wh, kind: power, min_valid: 0.0, max_valid: 2000.0, warn_high: 520.0, alarm_high: 600.0,
+         noise: {std: 3.0, dropout_prob: 0.001, jitter_ms: 25}}

@@ -1,0 +1,18 @@
+# The api/ingest/worker images build from the repo root, so Docker reads THIS file, not
+# apps/api/.dockerignore. Without it every .venv ships in the context (~450 MB, minutes per build).
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/node_modules
+**/dist
+**/.vite
+
+.git
+.github
+docs
+data/raw
+data/reports
+data/synthetic
+*.md

@@ -1,0 +1,63 @@
+import { theme, type ThemeConfig } from 'antd';
+
+import type { ThemeMode } from '../store/uiStore';
+
+export const FONT_FAMILY = 'Inter, system-ui, "Segoe UI", sans-serif';
+
+export const TOKENS = {
+  dark: {
+    colorBgLayout: '#0d1117',
+    colorBgContainer: '#161b22',
+    colorBgElevated: '#1f2630',
+    colorBorder: 'rgba(255,255,255,0.10)',
+    colorText: '#ffffff',
+    colorTextSecondary: '#c3c2b7',
+    colorTextTertiary: '#898781',
+    colorPrimary: '#3987e5',
+    colorPrimaryHover: '#5598e7',
+    colorSuccess: '#0ca30c',
+    colorWarning: '#fab219',
+    colorError: '#d03b3b',
+  },
+  light: {
+    colorBgLayout: '#f7f8fa',
+    colorBgContainer: '#ffffff',
+    colorBgElevated: '#ffffff',
+    colorBorder: 'rgba(11,11,11,0.10)',
+    colorText: '#0b0b0b',
+    colorTextSecondary: '#52514e',
+    colorTextTertiary: '#898781',
+    colorPrimary: '#2a78d6',
+    colorPrimaryHover: '#256abf',
+    colorSuccess: '#0ca30c',
+    colorWarning: '#fab219',
+    colorError: '#d03b3b',
+  },
+} as const;
+
+export function themeConfig(mode: ThemeMode): ThemeConfig {
+  const tokens = TOKENS[mode];
+  return {
+    algorithm: mode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
+    token: {
+      ...tokens,
+      colorBorderSecondary: tokens.colorBorder,
+      fontFamily: FONT_FAMILY,
+      borderRadius: 8,
+      borderRadiusLG: 12,
+      motionDurationMid: '0.15s',
+      motionDurationSlow: '0.25s',
+      boxShadowTertiary: mode === 'light' ? '0 1px 2px rgba(0,0,0,.06)' : 'none',
+    },
+    components: {
+      Layout: {
+        headerBg: tokens.colorBgContainer,
+        siderBg: tokens.colorBgContainer,
+        bodyBg: tokens.colorBgLayout,
+        headerHeight: 56,
+        headerPadding: '0 16px',
+      },
+      Menu: { itemBg: 'transparent' },
+    },
+  };
+}

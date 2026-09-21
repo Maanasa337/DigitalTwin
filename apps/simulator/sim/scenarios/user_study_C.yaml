@@ -1,0 +1,11 @@
+code: user_study_c
+name: "User study C: stuck sensor hides overheating"
+description: >-
+  The spindle temperature transmitter on cnc-02 sticks at a normal reading, then the spindle loses
+  lubrication. The primary symptom is hidden; only secondary vibration and current changes remain.
+seed: 103
+time_scale: 60
+duration_h: 6
+events:
+  - {at_h: 0.25, action: sensor_fault, asset: cnc-02, failure_mode: sensor_stuck, metric: spindle.temp}
+  - {at_h: 0.5, action: inject_fault, asset: cnc-02, failure_mode: lubrication_loss, mode: gradual, severity: 0.85}

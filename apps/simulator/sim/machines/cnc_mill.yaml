@@ -1,0 +1,121 @@
+# Vertical machining centre, 15 kW spindle. life_h values are operating hours at reference
+# conditions (100 % load, 100 % speed); plan loads of 70-90 % stretch them to roughly 8-25 weeks.
+asset_type: cnc_mill
+idle_power_fraction: 0.08
+eta_nominal: 0.91
+power_factor_rated: 0.86
+base_reject_rate: 0.01
+power_noise: {std: 0.08, jitter_ms: 25}
+load_noise: {std: 0.3, jitter_ms: 25}
+params:
+  vib_base: 0.8
+  vib_load: 0.7
+  vib_damage: 9.0
+  vib_axis: 1.5
+  vib_idle: 0.05
+  kurtosis_damage: 6.0
+  spindle_temp_rise_c: 18.0
+  bearing_temp_c: 12.0
+  lube_temp_c: 22.0
+  spindle_tau_s: 900.0
+  feed_rate_mm_min: 2400.0
+  following_error_mm: 0.004
+  following_error_damage_mm: 0.06
+components:
+  - code: spindle
+    name: Spindle
+    component_type: spindle
+    health_weight: 1.0
+    bearing: {n_balls: 9, ball_d_mm: 7.94, pitch_d_mm: 39.04, contact_angle_deg: 15.0, shaft_rpm: 8000}
+    process:
+      model: paris
+      params: {life_h: 1400, rpm: 8000, m: 3.0, a0_mm: 0.1, a_crit_mm: 2.0, stress_mpa: 120.0, y: 1.12}
+    failure_mode:
+      code: bearing_wear
+      name: Spindle bearing wear
+      description: Fatigue spalling of the spindle bearing raceway; vibration RMS and kurtosis rise, followed by temperature.
+      signature: {metrics: [spindle.vib_rms, spindle.vib_kurtosis, spindle.temp], pattern: trend}
+      severity: 3
+      driver: spindle.vib_rms
+      quality_impact: 0.05
+    sensors:
+      - {code: vib_rms, name: Spindle vibration RMS, unit: mm/s, kind: vibration, min_valid: 0.0, max_valid: 50.0, warn_high: 4.5, alarm_high: 7.1,
+         noise: {std: 0.05, drift: 0.002, spike_prob: 0.002, dropout_prob: 0.001, jitter_ms: 25}}
+      - {code: vib_kurtosis, name: Spindle vibration kurtosis, unit: "", kind: vibration, min_valid: 0.0, max_valid: 50.0, warn_high: 4.5, alarm_high: 6.0,
+         noise: {std: 0.08, spike_prob: 0.001, dropout_prob: 0.001, jitter_ms: 25}}
+      - {code: temp, name: Spindle temperature, unit: °C, kind: temperature, min_valid: -20.0, max_valid: 150.0, warn_high: 55.0, alarm_high: 62.0,
+         noise: {std: 0.15, drift: 0.003, dropout_prob: 0.001, jitter_ms: 25}}
+      - {code: load, name: Spindle load, unit: "%", kind: other, min_valid: 0.0, max_valid: 150.0, warn_high: 100.0, alarm_high: 110.0,
+         noise: {std: 0.8, dropout_prob: 0.001, jitter_ms: 25}}
+  - code: lube
+    name: Spindle lubrication system
+    component_type: other
+    health_weight: 0.6
+    process:
+      model: arrhenius
+      params: {life_h: 2000, cv: 0.2, load_exp: 1.0, ea_ev: 0.4, t_ref_c: 45.0}
+      temp_metric: spindle.temp
+    failure_mode:
+      code: lubrication_loss
+      name: Spindle lubrication loss
+      description: Grease degradation and starvation raise spindle temperature, which accelerates further degradation.
+      signature: {metrics: [spindle.temp, spindle.vib_rms], pattern: trend}
+      severity: 3
+      driver: spindle.temp
+      quality_impact: 0.02
+  - code: tool
+    name: Cutting tool
+    component_type: tool
+    health_weight: 0.5
+    process:
+      model: taylor
+      params: {life_h: 900, cutting_speed_m_min: 250.0, n: 0.25, vb_max_mm: 0.3, feed_exp: 0.5}
+    failure_mode:
+      code: tool_wear
+      name: Cutting tool wear
+      description: Flank wear following Taylor's tool-life law; spindle load and motor current creep up and rejects increase.
+      signature: {metrics: [tool.wear, spindle.load, motor.current], pattern: trend}
+      severity: 2
+      driver: tool.wear
+      quality_impact: 0.15
+    sensors:
+      - {code: wear, name: Tool flank wear, unit: mm, kind: other, min_valid: 0.0, max_valid: 0.5, warn_high: 0.2, alarm_high: 0.27,
+         noise: {std: 0.002, dropout_prob: 0.001, jitter_ms: 25}}
+  - code: axis
+    name: X-axis ball screw
+    component_type: screw
+    health_weight: 0.7
+    process:
+      model: wiener
+      params: {life_h: 2200, cv: 0.08, load_exp: 1.0}
+    failure_mode:
+      code: ballscrew_wear
+      name: Ball screw wear
+      description: Ball screw preload loss and backlash; following error grows and feed rate becomes erratic.
+      signature: {metrics: [axis.following_error, axis.feed_rate], pattern: trend}
+      severity: 2
+      driver: axis.following_error
+      quality_impact: 0.12
+      cycle_impact: 0.05
+    sensors:
+      - {code: feed_rate, name: Feed rate, unit: mm/min, kind: speed, min_valid: 0.0, max_valid: 6000.0,
+         noise: {std: 5.0, dropout_prob: 0.001, jitter_ms: 25}}
+      - {code: following_error, name: Axis following error, unit: mm, kind: position, min_valid: 0.0, max_valid: 1.0, warn_high: 0.03, alarm_high: 0.05,
+         noise: {std: 0.0008, spike_prob: 0.001, dropout_prob: 0.001, jitter_ms: 25}}
+  - code: motor
+    name: Spindle motor
+    component_type: motor
+    health_weight: 0.8
+    process:
+      model: motor_efficiency
+      params: {life_h: 2600, eta0: 0.91, k: 0.12, cv: 0.15, load_exp: 2.0}
+    failure_mode:
+      code: motor_efficiency_loss
+      name: Spindle motor efficiency loss
+      description: Winding insulation ageing and rotor losses lower efficiency; current and power rise for the same work.
+      signature: {metrics: [motor.current, power_kw], pattern: trend}
+      severity: 2
+      driver: motor.current
+    sensors:
+      - {code: current, name: Spindle motor current, unit: A, kind: current, min_valid: 0.0, max_valid: 60.0, warn_high: 28.0, alarm_high: 32.0,
+         noise: {std: 0.15, drift: 0.002, dropout_prob: 0.001, jitter_ms: 25}}

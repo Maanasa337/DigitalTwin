@@ -1,0 +1,21 @@
+# Development overrides (applied automatically by `docker compose up`): hot reload and debug ports.
+services:
+  api:
+    command: >-
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/apps/api/app"
+    environment:
+      # Bind mounts from Windows do not emit inotify events.
+      WATCHFILES_FORCE_POLLING: "true"
+      TV_LOG_LEVEL: DEBUG
+    volumes:
+      - ./apps/api/app:/app/apps/api/app
+      - ./apps/api/alembic:/app/apps/api/alembic
+
+  ditto-gateway:
+    ports:
+      - "127.0.0.1:8080:8080"
+
+  simulator:
+    ports:
+      - "127.0.0.1:8090:8090"

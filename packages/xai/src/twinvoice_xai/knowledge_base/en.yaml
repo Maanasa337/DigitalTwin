@@ -1,0 +1,51 @@
+# Seed knowledge base, keyed by failure_modes.code. Loaded into knowledge_base_entries by app.seed.
+# `evidence_metrics` are the feature name prefixes that corroborate the mode; a reason card's
+# confidence rises with how many of them appear in the prediction's top attributions.
+
+bearing_wear:
+  symptom: Rising vibration with a warmer bearing housing
+  likely_cause: Bearing raceway wear or loss of lubrication film
+  recommended_action: Schedule a bearing inspection; re-grease and re-check vibration after 2 hours of running
+  evidence_metrics: [spindle.vib_rms, bearing.temp, motor.current]
+  parts: [bearing-6206, grease-nlgi2]
+  est_duration_min: 120
+
+impeller_damage:
+  symptom: Reduced flow with unstable discharge pressure
+  likely_cause: Impeller erosion, fouling or a shed blade
+  recommended_action: Stop the unit, inspect the impeller and clearances, replace if blade damage is visible
+  evidence_metrics: [flow, pressure, spindle.vib_rms]
+  parts: [impeller-assy, gasket-set]
+  est_duration_min: 240
+
+overheating:
+  symptom: Temperature climbing while load stays flat
+  likely_cause: Restricted coolant flow or a fouled heat exchanger
+  recommended_action: Check coolant level and flow, clean the exchanger, verify the fan and thermostat
+  evidence_metrics: [motor.temp, coolant_temp, flow]
+  parts: [coolant-50l, filter-element]
+  est_duration_min: 90
+
+electrical_fault:
+  symptom: Current draw unstable or above rating at normal load
+  likely_cause: Winding insulation degradation, a loose terminal, or supply phase imbalance
+  recommended_action: De-energise and lock out, megger the windings, torque-check the terminals, measure phase balance
+  evidence_metrics: [motor.current, power_kw, motor.temp]
+  parts: [terminal-kit]
+  est_duration_min: 180
+
+tool_wear:
+  symptom: Rising spindle load and degrading surface finish
+  likely_cause: Cutting edge worn past its limit
+  recommended_action: Replace the tool and reset the tool-life counter
+  evidence_metrics: [load_pct, motor.current, spindle.vib_rms]
+  parts: [insert-set]
+  est_duration_min: 30
+
+normal:
+  symptom: No abnormal signature detected
+  likely_cause: Machine operating within its learned envelope
+  recommended_action: No action; continue monitoring
+  evidence_metrics: []
+  parts: []
+  est_duration_min: 0

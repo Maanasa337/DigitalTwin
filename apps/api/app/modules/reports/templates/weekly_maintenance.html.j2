@@ -1,0 +1,24 @@
+{% extends "base.html.j2" %}
+{% import "_macros.html.j2" as m %}
+{% block content %}
+  <div class="tiles">
+    {{ m.tile("Raised", data.raised) }}
+    {{ m.tile("Closed", data.closed) }}
+    {{ m.tile("MTBF", data.mtbf_h|round(1) if data.mtbf_h is not none else none, " h") }}
+    {{ m.tile("MTTR", data.mttr_h|round(1) if data.mttr_h is not none else none, " h") }}
+    {{ m.tile("Breakdowns", data.breakdowns) }}
+    {{ m.tile("Prediction accuracy", data.prediction_accuracy_pct, "%") }}
+  </div>
+
+  {% if data.prediction_accuracy_pct is none %}
+    <p class="empty">No closed order was scored against its prediction this period, so accuracy is not reported.</p>
+  {% else %}
+    <p class="meta">{{ data.predictions_correct }} of {{ data.predictions_scored }} scored orders confirmed the prediction that raised them.</p>
+  {% endif %}
+
+  <h2>Orders by status</h2>
+  {{ m.chart(charts, "by_status", "Work orders by status") }}
+
+  <h2>Work orders</h2>
+  {{ m.table(data.orders, [("number", "#"), ("asset", "Machine"), ("title", "Task"), ("type", "Type"), ("priority", "Pri"), ("status", "Status"), ("technician", "Technician")]) }}
+{% endblock %}

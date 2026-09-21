@@ -1,0 +1,29 @@
+{# Shared fragments so every report type renders a tile, a table and a chart the same way. #}
+
+{% macro tile(label, value, unit="") %}
+  <div class="tile">
+    <div class="label">{{ label }}</div>
+    <div class="value">{{ value if value is not none else "—" }}{% if unit and value is not none %}<span class="unit">{{ unit }}</span>{% endif %}</div>
+  </div>
+{% endmacro %}
+
+{% macro chart(images, key, caption) %}
+  {% if images.get(key) %}
+    <img class="chart" src="{{ images[key] }}" alt="{{ caption }}">
+  {% endif %}
+{% endmacro %}
+
+{% macro table(rows, columns, empty="Nothing was recorded in this period.") %}
+  {% if rows %}
+    <table>
+      <thead><tr>{% for _, header in columns %}<th>{{ header }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>{% for key, _ in columns %}<td>{{ row.get(key) if row.get(key) is not none else "—" }}</td>{% endfor %}</tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="empty">{{ empty }}</p>
+  {% endif %}
+{% endmacro %}

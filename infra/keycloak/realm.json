@@ -1,0 +1,119 @@
+{
+  "realm": "twinvoice",
+  "displayName": "TwinVoice",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "resetPasswordAllowed": false,
+  "accessTokenLifespan": 300,
+  "roles": {
+    "realm": [
+      { "name": "technician", "description": "Shop-floor technician: reads twins, works own orders" },
+      { "name": "manager", "description": "Plant manager: reads KPIs and reports" },
+      { "name": "engineer", "description": "Reliability engineer: manages assets, models, simulation" },
+      { "name": "admin", "description": "Platform administrator" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "twinvoice-web",
+      "name": "TwinVoice web app",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "implicitFlowEnabled": false,
+      "redirectUris": ["http://localhost:5173/*", "http://localhost/*", "http://localhost:8088/*"],
+      "webOrigins": ["http://localhost:5173", "http://localhost", "http://localhost:8088"],
+      "attributes": { "pkce.code.challenge.method": "S256", "post.logout.redirect.uris": "+" },
+      "protocolMappers": [
+        {
+          "name": "audience twinvoice-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "twinvoice-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "twinvoice-api",
+      "name": "TwinVoice API",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "twinvoice-api-dev-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true
+    }
+  ],
+  "users": [
+    {
+      "username": "ravi",
+      "enabled": true,
+      "email": "ravi@twinvoice.local",
+      "emailVerified": true,
+      "firstName": "Ravi",
+      "lastName": "Technician",
+      "credentials": [{ "type": "password", "value": "twinvoice", "temporary": false }],
+      "realmRoles": ["technician"]
+    },
+    {
+      "username": "priya",
+      "enabled": true,
+      "email": "priya@twinvoice.local",
+      "emailVerified": true,
+      "firstName": "Priya",
+      "lastName": "Manager",
+      "credentials": [{ "type": "password", "value": "twinvoice", "temporary": false }],
+      "realmRoles": ["manager"]
+    },
+    {
+      "username": "marcus",
+      "enabled": true,
+      "email": "marcus@twinvoice.local",
+      "emailVerified": true,
+      "firstName": "Marcus",
+      "lastName": "Engineer",
+      "attributes": { "tv_pin": ["246810"] },
+      "credentials": [{ "type": "password", "value": "twinvoice", "temporary": false }],
+      "realmRoles": ["engineer"]
+    },
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@twinvoice.local",
+      "emailVerified": true,
+      "firstName": "Platform",
+      "lastName": "Admin",
+      "attributes": { "tv_pin": ["135790"] },
+      "credentials": [{ "type": "password", "value": "twinvoice", "temporary": false }],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "service-account-twinvoice-api",
+      "enabled": true,
+      "serviceAccountClientId": "twinvoice-api",
+      "clientRoles": { "realm-management": ["view-users"] }
+    }
+  ],
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"firstName\",\"displayName\":\"${firstName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"lastName\",\"displayName\":\"${lastName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"tv_pin\",\"displayName\":\"T3 PIN\",\"validations\":{\"pattern\":{\"pattern\":\"^[0-9]{4,8}$\",\"error-message\":\"PIN must be 4-8 digits\"}},\"permissions\":{\"view\":[\"admin\"],\"edit\":[\"admin\"]},\"multivalued\":false}],\"groups\":[{\"name\":\"user-metadata\",\"displayHeader\":\"User metadata\",\"displayDescription\":\"Attributes, which refer to user metadata\"}]}"
+          ]
+        }
+      }
+    ]
+  }
+}

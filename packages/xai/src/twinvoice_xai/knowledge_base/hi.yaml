@@ -1,0 +1,49 @@
+# Hindi knowledge base. Keys and evidence_metrics stay identical to en.yaml; only the prose differs.
+
+bearing_wear:
+  symptom: कंपन बढ़ रहा है और बेयरिंग हाउसिंग गरम है
+  likely_cause: बेयरिंग रेसवे की घिसावट या स्नेहन फ़िल्म की कमी
+  recommended_action: बेयरिंग निरीक्षण निर्धारित करें; ग्रीस भरें और 2 घंटे चलाने के बाद कंपन दोबारा जाँचें
+  evidence_metrics: [spindle.vib_rms, bearing.temp, motor.current]
+  parts: [bearing-6206, grease-nlgi2]
+  est_duration_min: 120
+
+impeller_damage:
+  symptom: प्रवाह घट गया है और डिस्चार्ज दाब अस्थिर है
+  likely_cause: इम्पेलर का क्षरण, जमाव या ब्लेड टूटना
+  recommended_action: यूनिट बंद करें, इम्पेलर और क्लीयरेंस जाँचें, ब्लेड क्षति दिखे तो बदलें
+  evidence_metrics: [flow, pressure, spindle.vib_rms]
+  parts: [impeller-assy, gasket-set]
+  est_duration_min: 240
+
+overheating:
+  symptom: लोड स्थिर रहते हुए तापमान बढ़ रहा है
+  likely_cause: शीतलक प्रवाह बाधित है या हीट एक्सचेंजर जाम है
+  recommended_action: शीतलक स्तर और प्रवाह जाँचें, एक्सचेंजर साफ़ करें, पंखा और थर्मोस्टेट सत्यापित करें
+  evidence_metrics: [motor.temp, coolant_temp, flow]
+  parts: [coolant-50l, filter-element]
+  est_duration_min: 90
+
+electrical_fault:
+  symptom: सामान्य लोड पर धारा अस्थिर या रेटिंग से अधिक है
+  likely_cause: वाइंडिंग इंसुलेशन की गिरावट, ढीला टर्मिनल, या फेज़ असंतुलन
+  recommended_action: बिजली बंद कर लॉकआउट करें, वाइंडिंग मेगर करें, टर्मिनल कसें, फेज़ संतुलन मापें
+  evidence_metrics: [motor.current, power_kw, motor.temp]
+  parts: [terminal-kit]
+  est_duration_min: 180
+
+tool_wear:
+  symptom: स्पिंडल लोड बढ़ रहा है और सतह फ़िनिश बिगड़ रही है
+  likely_cause: कटिंग एज अपनी सीमा से अधिक घिस चुका है
+  recommended_action: टूल बदलें और टूल-लाइफ़ काउंटर रीसेट करें
+  evidence_metrics: [load_pct, motor.current, spindle.vib_rms]
+  parts: [insert-set]
+  est_duration_min: 30
+
+normal:
+  symptom: कोई असामान्य संकेत नहीं मिला
+  likely_cause: मशीन अपने सामान्य दायरे में चल रही है
+  recommended_action: कोई कार्रवाई नहीं; निगरानी जारी रखें
+  evidence_metrics: []
+  parts: []
+  est_duration_min: 0

@@ -1,0 +1,402 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "copied": "Copied to clipboard",
+    "copy": "Copy",
+    "copyFailed": "Could not copy to clipboard",
+    "create": "Create",
+    "download": "Download",
+    "optional": "Optional",
+    "retry": "Retry",
+    "save": "Save",
+    "delete": "Delete",
+    "noData": "No data"
+  },
+  "auth": {
+    "signingIn": "Signing in…",
+    "failed": "Sign-in failed. Check that the identity server is reachable."
+  },
+  "errors": {
+    "generic": "Something went wrong",
+    "loadFailed": "Could not load data",
+    "forbidden": "You do not have permission to open this page.",
+    "notFound": "This page does not exist.",
+    "goHome": "Go to Twin"
+  },
+  "nav": {
+    "label": "Main navigation",
+    "twin": "Twin",
+    "simulation": "Simulation",
+    "maintenance": "Maintenance",
+    "production": "Production",
+    "energy": "Energy",
+    "reports": "Reports",
+    "voice": "Assistant"
+  },
+  "topbar": {
+    "toggleNav": "Toggle navigation",
+    "language": "Language",
+    "lightTheme": "Switch to light theme",
+    "darkTheme": "Switch to dark theme",
+    "userMenu": "User menu",
+    "logout": "Log out"
+  },
+  "roles": {
+    "technician": "Technician",
+    "manager": "Manager",
+    "engineer": "Engineer",
+    "admin": "Admin"
+  },
+  "ws": {
+    "live": "Live",
+    "stale": "No heartbeat",
+    "connecting": "Connecting",
+    "offline": "Offline",
+    "tooltip": "Live connection: {{status}}"
+  },
+  "status": {
+    "noData": "No data",
+    "asset": {
+      "RUNNING": "Running",
+      "IDLE": "Idle",
+      "MAINTENANCE": "Maintenance",
+      "DOWN": "Down",
+      "UNKNOWN": "Unknown"
+    },
+    "level": {
+      "good": "Good",
+      "warning": "Warning",
+      "serious": "Serious",
+      "critical": "Critical",
+      "neutral": "No data"
+    }
+  },
+  "health": {
+    "label": "Health: {{value}}"
+  },
+  "assetType": {
+    "cnc_mill": "CNC mill",
+    "compressor": "Compressor",
+    "conveyor": "Conveyor",
+    "hydraulic_press": "Hydraulic press",
+    "injection_moulder": "Injection moulder",
+    "other": "Other"
+  },
+  "confirm": {
+    "title": "Confirm action",
+    "confirm": "Confirm",
+    "pin": "PIN",
+    "secondsLeft": "{{count}}s",
+    "countdown": "{{count}} seconds left before this is cancelled"
+  },
+  "twin": {
+    "title": "Digital twin",
+    "subtitle": "Plant hierarchy, Asset Administration Shell and live twin state",
+    "tree": {
+      "search": "Search by code or name",
+      "noMatch": "No assets match your search"
+    },
+    "empty": {
+      "noAssets": "No assets registered yet",
+      "noSelection": "Select an asset in the tree to see its twin",
+      "notFound": "Asset {{code}} was not found. It may have been retired."
+    },
+    "fidelity": {
+      "1": "Status",
+      "2": "Telemetry",
+      "3": "Physics",
+      "4": "Predictive",
+      "tooltip": "Twin fidelity level"
+    },
+    "actions": {
+      "newAsset": "New asset",
+      "importAasx": "Import AASX",
+      "clone": "Clone",
+      "retire": "Retire",
+      "sendCommand": "Send command",
+      "exportAasx": "AASX",
+      "exportAasJson": "AAS JSON"
+    },
+    "tabs": {
+      "sensors": "Components & sensors",
+      "live": "Live twin",
+      "raw": "Raw AAS JSON"
+    },
+    "aas": {
+      "emptySubmodel": "This submodel has no data yet",
+      "emptyCollection": "Empty"
+    },
+    "sensors": {
+      "component": "Component",
+      "metric": "Metric",
+      "name": "Name",
+      "unit": "Unit",
+      "kind": "Kind",
+      "warn": "Warning (low – high)",
+      "alarm": "Alarm (low – high)",
+      "empty": "No sensors configured for this asset"
+    },
+    "live": {
+      "metric": "Metric",
+      "value": "Value",
+      "unit": "Unit",
+      "age": "Age",
+      "ageValue": "{{count}} s ago",
+      "thing": "Thing",
+      "revision": "Revision",
+      "status": "Status",
+      "health": "Health",
+      "empty": "No telemetry received yet"
+    },
+    "form": {
+      "line": "Line",
+      "linePlaceholder": "Select a line",
+      "code": "Code",
+      "codeHelp": "Lowercase letters, digits and hyphens, e.g. cnc-03",
+      "codeInvalid": "Use 2–49 lowercase letters, digits or hyphens, starting with a letter or digit",
+      "name": "Name",
+      "type": "Asset type",
+      "manufacturer": "Manufacturer",
+      "model": "Model",
+      "serial": "Serial number",
+      "installDate": "Install date",
+      "fidelity": "Fidelity level",
+      "ratedPower": "Rated power",
+      "idealCycle": "Ideal cycle time"
+    },
+    "import": {
+      "file": "AASX package",
+      "choose": "Choose .aasx file",
+      "fileRequired": "Choose an AASX file",
+      "submit": "Import"
+    },
+    "clone": {
+      "title": "Clone {{code}}",
+      "defaultName": "{{name}} (copy)"
+    },
+    "retire": {
+      "title": "Retire {{code}}?",
+      "description": "The asset is removed from the tree and its twin becomes read-only."
+    },
+    "command": {
+      "title": "Send command to {{code}}",
+      "command": "Command",
+      "review": "Review",
+      "names": {
+        "set_load": "Set load",
+        "set_speed": "Set speed",
+        "maintenance_reset": "Maintenance reset"
+      },
+      "loadPct": "Load (0–110 %)",
+      "speedPct": "Speed (50–120 %)",
+      "component": "Component",
+      "allComponents": "all components",
+      "readback": {
+        "set_load": "Set load on {{code}} to {{value}} %. This writes to the machine.",
+        "set_speed": "Set speed on {{code}} to {{value}} %. This writes to the machine.",
+        "maintenance_reset": "Reset maintenance on {{code}} for {{component}}. This writes to the machine."
+      },
+      "accepted": "Command accepted",
+      "commandId": "Command ID: {{id}}",
+      "rejected": "Command rejected by the machine",
+      "failed": "Command failed",
+      "t3Disabled": "Write-back (T3) is disabled on this server",
+      "pinIncorrect": "PIN incorrect",
+      "noAck": "Machine did not acknowledge"
+    }
+  },
+  "sim": {
+    "title": "Simulation",
+    "subtitle": "Control the virtual fleet: scenarios, time scale, faults and dataset export",
+    "unreachable": "Simulator unreachable",
+    "stale": "Could not refresh simulator status. Showing the last known state.",
+    "running": "Running",
+    "paused": "Paused",
+    "noScenario": "None",
+    "startedAt": "started {{time}}",
+    "tiles": {
+      "clock": "Sim clock",
+      "elapsed": "Elapsed",
+      "running": "State",
+      "scenario": "Scenario"
+    },
+    "timeScale": {
+      "title": "Time scale",
+      "help": "Applied when you release the slider."
+    },
+    "scenario": {
+      "title": "Scenario",
+      "placeholder": "Select a scenario",
+      "start": "Start",
+      "confirmTitle": "Start scenario {{code}}?",
+      "confirmDescription": "This resets the fleet: damage, faults and state are replaced by the scenario.",
+      "started": "Scenario {{code}} started (seed {{seed}})"
+    },
+    "export": {
+      "button": "Export dataset",
+      "title": "Export synthetic dataset",
+      "submit": "Export",
+      "running": "Generating dataset. This can take tens of seconds.",
+      "scenario": "Scenario",
+      "currentScenario": "Current scenario",
+      "hours": "Hours",
+      "hoursRange": "Between 0 and 168 hours",
+      "samplePeriod": "Sample period",
+      "samplePeriodRange": "Must be greater than 0",
+      "seed": "Seed",
+      "path": "Path",
+      "rows": "Rows",
+      "columns": "Columns"
+    },
+    "fleet": {
+      "title": "Fleet damage",
+      "asset": "Asset",
+      "type": "Type",
+      "line": "Line",
+      "state": "State",
+      "load": "Load",
+      "damage": "Damage by component",
+      "trueRul": "True RUL",
+      "modes": "Active modes",
+      "sensorFaults": "Sensor faults",
+      "actions": "Actions",
+      "reset": "Reset",
+      "resetTitle": "Reset {{code}}?",
+      "resetDescription": "Sets damage to zero and logs a maintenance event.",
+      "resetDone": "{{code}} reset: {{components}}",
+      "empty": "The simulator has no assets"
+    },
+    "mode": {
+      "gradual": "Gradual",
+      "sudden": "Sudden"
+    },
+    "sensorFault": {
+      "sensor_stuck": "Sensor stuck",
+      "sensor_offset": "Sensor offset",
+      "sensor_dropout": "Sensor dropout",
+      "sensor_drift": "Sensor drift"
+    },
+    "fault": {
+      "title": "Inject fault",
+      "asset": "Asset",
+      "failureMode": "Failure mode",
+      "physicalModes": "Failure modes",
+      "sensorFaults": "Sensor faults",
+      "metric": "Metric",
+      "assetNotRegistered": "Asset is not registered in the platform",
+      "mode": "Onset",
+      "severity": "Severity",
+      "duration": "Duration",
+      "submit": "Inject",
+      "accepted": "Injected {{mode}} on {{code}}",
+      "notAccepted": "Simulator did not accept {{mode}} on {{code}}"
+    },
+    "log": {
+      "title": "Live log",
+      "empty": "No log entries yet",
+      "level": {
+        "info": "Info",
+        "warning": "Warning",
+        "error": "Error"
+      }
+    }
+  },
+  "voice": {
+    "title": "Assistant",
+    "open": "Open the assistant",
+    "history": "History",
+    "pageTitle": "Voice assistant",
+    "pageSubtitle": "Ask about a machine, run a what-if, raise a work order or generate a report. Anything that changes state is read back before it happens.",
+    "commands": "What you can say",
+    "sessions": "Recent sessions",
+    "sessionTranscript": "Transcript",
+    "selectSession": "Select a session to read its transcript",
+    "noSessions": "No sessions yet",
+    "startedAt": "Started",
+    "channel": "Channel",
+    "channelName": {
+      "voice": "Voice",
+      "chat": "Chat"
+    },
+    "language": "Language",
+    "transcript": "Conversation",
+    "emptyTranscript": "Nothing said yet",
+    "placeholder": "Ask about a machine...",
+    "send": "Send",
+    "thinking": "Thinking",
+    "hint": "Try “how is cnc one”, then “why”, then “schedule bearing replacement for it on Friday morning”.",
+    "citations": "Source",
+    "hypothetical": "Hypothetical",
+    "tier": {
+      "T0": "Query",
+      "T1": "Simulate",
+      "T2": "Schedule",
+      "T3": "Actuate"
+    },
+    "tierHint": {
+      "T0": "Read-only. Runs immediately.",
+      "T1": "A simulation. Nothing in the plant changes.",
+      "T2": "Changes records. Read back and confirmed first.",
+      "T3": "Writes to the machine. Needs a confirmation and a PIN."
+    },
+    "router": {
+      "rules": "Grammar",
+      "llm": "Model",
+      "none": "Not understood"
+    },
+    "outcome": {
+      "executed": "Done.",
+      "cancelled": "Cancelled.",
+      "rejected": "That could not be confirmed.",
+      "expired": "The confirmation window closed.",
+      "failed": "That did not go through."
+    }
+  },
+  "reports": {
+    "pageTitle": "Reports",
+    "pageSubtitle": "Generated on demand, on a schedule, or after a failure. Every summary is checked against the figures it describes.",
+    "archive": "Archive",
+    "generate": "Generate report",
+    "type": "Type",
+    "typeName": {
+      "machine_health": "Machine health",
+      "weekly_maintenance": "Weekly maintenance",
+      "energy": "Energy",
+      "benchmark": "Model benchmark",
+      "incident": "Incident"
+    },
+    "statusLabel": "Status",
+    "status": {
+      "queued": "Queued",
+      "running": "Running",
+      "done": "Ready",
+      "failed": "Failed"
+    },
+    "format": "Format",
+    "formatHint": "PDF is produced in the platform container; elsewhere it is delivered as HTML.",
+    "scope": "Scope",
+    "asset": "Machine",
+    "assetRequired": "This report is about one machine, so pick one.",
+    "period": "Period",
+    "requestedVia": "Requested via",
+    "createdAt": "Created",
+    "noReports": "No reports yet",
+    "summary": "Executive summary",
+    "auditLlm": "Drafted by the local model and checked against the figures.",
+    "auditTemplate": "Generated from the figures.",
+    "auditFailed": "The drafted text failed the check ({{reason}}) and was replaced.",
+    "failed": "This report could not be generated",
+    "previewUnavailable": "This format cannot be previewed in the browser. Download it instead.",
+    "schedules": "Schedules",
+    "addSchedule": "Add",
+    "deleteSchedule": "Delete this schedule?",
+    "noSchedules": "No schedules yet",
+    "cron": "Cron",
+    "cronHint": "Five fields, in the plant timezone: minute hour day month weekday.",
+    "cronInvalid": "Five whitespace-separated fields, e.g. 0 6 * * 1",
+    "recipients": "Recipients",
+    "lastRun": "Last run",
+    "enabled": "Enabled"
+  }
+}

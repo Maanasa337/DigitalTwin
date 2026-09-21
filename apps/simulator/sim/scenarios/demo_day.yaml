@@ -1,0 +1,16 @@
+code: demo_day
+name: Demo day
+description: >-
+  An eight-hour production day with several developing problems: accelerated tool wear on cnc-02
+  (replaced mid-day), air-end overheating on compressor-01, a belt-speed transmitter dropping out on
+  conveyor-01, a heater band degrading on moulder-01 and an operator pushing press-01 to 95 % load.
+seed: 7
+time_scale: 60
+duration_h: 8
+events:
+  - {at_h: 0.5, action: inject_fault, asset: cnc-02, failure_mode: tool_wear, mode: gradual, severity: 0.9}
+  - {at_h: 1.0, action: inject_fault, asset: compressor-01, failure_mode: overheating, mode: gradual, severity: 0.6}
+  - {at_h: 2.0, action: sensor_fault, asset: conveyor-01, failure_mode: sensor_dropout, metric: belt.speed, duration_s: 1800}
+  - {at_h: 3.0, action: set_load, asset: press-01, load_pct: 95}
+  - {at_h: 4.0, action: inject_fault, asset: moulder-01, failure_mode: heater_failure, mode: gradual, severity: 0.8}
+  - {at_h: 4.5, action: reset, asset: cnc-02, component_code: tool}

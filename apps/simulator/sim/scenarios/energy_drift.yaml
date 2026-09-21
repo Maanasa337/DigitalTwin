@@ -1,0 +1,12 @@
+code: energy_drift
+name: Motor efficiency drift
+description: >-
+  Motor efficiency losses develop on compressor-02, moulder-02 and press-01 over a day. Output is
+  unchanged, so the only symptoms are rising motor current, active power and energy per cycle.
+seed: 21
+time_scale: 200
+duration_h: 20
+events:
+  - {at_h: 1, action: inject_fault, asset: compressor-02, failure_mode: motor_efficiency_loss, mode: gradual, severity: 0.05}
+  - {at_h: 2, action: inject_fault, asset: moulder-02, failure_mode: motor_efficiency_loss, mode: gradual, severity: 0.0}
+  - {at_h: 4, action: inject_fault, asset: press-01, failure_mode: motor_efficiency_loss, mode: gradual, severity: 0.1}

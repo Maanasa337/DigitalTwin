@@ -1,0 +1,261 @@
+name: twinvoice
+
+x-ditto-service: &ditto-service
+  restart: unless-stopped
+  depends_on:
+    mongodb:
+      condition: service_started
+  networks:
+    default:
+      aliases:
+        - ditto-cluster
+  deploy:
+    resources:
+      limits:
+        memory: 512m
+  healthcheck:
+    test: ["CMD-SHELL", "curl --fail `hostname`:7626/alive || exit 1"]
+    interval: 30s
+    timeout: 15s
+    retries: 4
+    start_period: 120s
+  logging:
+    options:
+      max-size: 20m
+
+x-ditto-env: &ditto-env
+  TZ: UTC
+  BIND_HOSTNAME: 0.0.0.0
+  MONGO_DB_HOSTNAME: mongodb
+  JAVA_TOOL_OPTIONS: >-
+    -XX:ActiveProcessorCount=2 -XX:+ExitOnOutOfMemoryError -XX:+UseContainerSupport -XX:+UseStringDeduplication
+    -Xss512k -XX:MaxRAMPercentage=50 -XX:+UseG1GC -XX:MaxGCPauseMillis=150
+    -Dpekko.coordinated-shutdown.exit-jvm=on -Dpekko.cluster.shutdown-after-unsuccessful-join-seed-nodes=180s
+    -Dpekko.cluster.failure-detector.threshold=15.0 -Dpekko.cluster.failure-detector.expected-response-after=10s
+    -Dpekko.cluster.failure-detector.acceptable-heartbeat-pause=20s -Dpekko.cluster.downing-provider-class=
+
+services:
+  postgres:
+    image: timescale/timescaledb-ha:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: twinvoice
+      POSTGRES_PASSWORD: twinvoice
+      POSTGRES_DB: twinvoice
+    ports:
+      - "127.0.0.1:${TV_PG_HOST_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/home/postgres/pgdata
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U twinvoice -d twinvoice"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  valkey:
+    image: valkey/valkey:8
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1883:1883"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - ./infra/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto-data:/mosquitto/data
+
+  mongodb:
+    image: mongo:7.0
+    restart: unless-stopped
+    command: mongod --storageEngine wiredTiger --noscripting
+    deploy:
+      resources:
+        limits:
+          memory: 384m
+    volumes:
+      - mongo-data:/data/db
+
+  ditto-policies:
+    <<: *ditto-service
+    image: eclipse/ditto-policies:${DITTO_VERSION:-3.9.0}
+    environment: *ditto-env
+
+  ditto-things:
+    <<: *ditto-service
+    image: eclipse/ditto-things:${DITTO_VERSION:-3.9.0}
+    environment: *ditto-env
+
+  ditto-things-search:
+    <<: *ditto-service
+    image: eclipse/ditto-things-search:${DITTO_VERSION:-3.9.0}
+    environment: *ditto-env
+
+  ditto-gateway:
+    <<: *ditto-service
+    image: eclipse/ditto-gateway:${DITTO_VERSION:-3.9.0}
+    environment:
+      <<: *ditto-env
+      # Only the API on the internal network talks to Ditto; the gateway port is not published in this file.
+      ENABLE_PRE_AUTHENTICATION: "true"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7
+    restart: unless-stopped
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: http://localhost:8081
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "127.0.0.1:8081:8080"
+    volumes:
+      - ./infra/keycloak/realm.json:/opt/keycloak/data/import/realm.json:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9000 &&
+          printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          grep -q '"UP"' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      TV_DATABASE_URL: postgresql+psycopg://twinvoice:twinvoice@postgres:5432/twinvoice
+      TV_VALKEY_URL: redis://valkey:6379/0
+      TV_MQTT_HOST: mosquitto
+      TV_DITTO_URL: http://ditto-gateway:8080
+      TV_KEYCLOAK_ISSUER: http://localhost:8081/realms/twinvoice
+      TV_KEYCLOAK_INTERNAL_URL: http://keycloak:8080
+      TV_SIMULATOR_URL: http://simulator:8090
+      TV_ALLOW_T3: ${TV_ALLOW_T3:-false}
+      TV_LLM_ENDPOINT: ${TV_LLM_ENDPOINT:-}
+    volumes:
+      - ./data/reports:/app/apps/api/data/reports
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+      keycloak:
+        condition: service_started
+      ditto-gateway:
+        condition: service_started
+
+  simulator:
+    build:
+      context: .
+      dockerfile: apps/simulator/Dockerfile
+    restart: unless-stopped
+    environment:
+      SIM_MQTT_HOST: mosquitto
+      SIM_EXPORT_DIR: /data/synthetic
+    ports:
+      - "127.0.0.1:4840:4840"
+      - "127.0.0.1:5020:5020"
+    volumes:
+      - ./data:/data
+    depends_on:
+      - mosquitto
+
+  web:
+    build: ./apps/web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8088:80"
+    depends_on:
+      - api
+
+  ingest:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    command: ["python", "-m", "app.ingest"]
+    # Inherited from the API image, whose healthcheck probes an HTTP port this service never opens.
+    healthcheck:
+      disable: true
+    environment:
+      TV_DATABASE_URL: postgresql+psycopg://twinvoice:twinvoice@postgres:5432/twinvoice
+      TV_VALKEY_URL: redis://valkey:6379/0
+      TV_MQTT_HOST: mosquitto
+      TV_DITTO_URL: http://ditto-gateway:8080
+      TV_KEYCLOAK_ISSUER: http://localhost:8081/realms/twinvoice
+      TV_KEYCLOAK_INTERNAL_URL: http://keycloak:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+      ditto-gateway:
+        condition: service_started
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    # Beat's shelve file must live somewhere the unprivileged `app` user can write; the default is
+    # the read-only working directory, where it dies on startup and takes every periodic task with it.
+    command:
+      - celery
+      - -A
+      - app.workers.celery_app
+      - worker
+      - --beat
+      - --schedule=/data/celery/celerybeat-schedule
+      - -l
+      - info
+      - -c
+      - "2"
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.workers.celery_app inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    environment:
+      TV_DATABASE_URL: postgresql+psycopg://twinvoice:twinvoice@postgres:5432/twinvoice
+      TV_VALKEY_URL: redis://valkey:6379/0
+      TV_MQTT_HOST: mosquitto
+      TV_DITTO_URL: http://ditto-gateway:8080
+      TV_KEYCLOAK_ISSUER: http://localhost:8081/realms/twinvoice
+      TV_KEYCLOAK_INTERNAL_URL: http://keycloak:8080
+      TV_LLM_ENDPOINT: ${TV_LLM_ENDPOINT:-}
+    volumes:
+      - ./data/reports:/app/apps/api/data/reports
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  mosquitto-data:
+  mongo-data:

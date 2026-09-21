@@ -1,0 +1,9 @@
+code: user_study_a
+name: "User study A: bearing wear"
+description: >-
+  compressor-01 develops air-end bearing wear. Vibration RMS trends upward; all other assets run normally.
+seed: 101
+time_scale: 60
+duration_h: 6
+events:
+  - {at_h: 0.25, action: inject_fault, asset: compressor-01, failure_mode: bearing_wear, mode: gradual, severity: 0.85}

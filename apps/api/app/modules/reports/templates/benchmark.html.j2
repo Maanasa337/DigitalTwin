@@ -1,0 +1,29 @@
+{% extends "base.html.j2" %}
+{% import "_macros.html.j2" as m %}
+{% block content %}
+  {% if data.run %}
+    <div class="tiles">
+      {{ m.tile("Seed", data.run.seed) }}
+      {{ m.tile("Datasets", data.run.datasets|length) }}
+      {{ m.tile("Production models", data.model_count) }}
+    </div>
+    <p class="meta">Run started {{ data.run.started_at }}{% if data.run.git_sha %} at commit {{ data.run.git_sha[:12] }}{% endif %}.</p>
+
+    <h2>Results</h2>
+    <table>
+      <thead><tr><th>Dataset</th><th>Metric</th><th>Value</th></tr></thead>
+      <tbody>
+        {% for dataset, metrics in data.run.results.items() %}
+          {% for metric, value in metrics.items() %}
+            <tr><td>{{ dataset }}</td><td>{{ metric }}</td><td>{{ value }}</td></tr>
+          {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="empty">No completed benchmark run is on record.</p>
+  {% endif %}
+
+  <h2>Models in production</h2>
+  {{ m.table(data.production_models, [("name", "Model"), ("version", "Version"), ("task", "Task"), ("algorithm", "Algorithm"), ("trained_at", "Trained")], "No model has been promoted to production.") }}
+{% endblock %}

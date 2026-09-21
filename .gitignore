@@ -1,0 +1,77 @@
+# ---------- Secrets / local env ----------
+.env
+.env.*
+!.env.example
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.python-version.local
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+
+# ---------- Node / web ----------
+node_modules/
+dist/
+build/
+.vite/
+*.tsbuildinfo
+coverage/
+.eslintcache
+playwright-report/
+test-results/
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
+
+# ---------- Data & generated artifacts ----------
+# Datasets are fetched with data/download.py; reports/PDFs are generated at runtime.
+data/raw/
+data/reports/
+data/synthetic/
+data/processed/
+*.csv.gz
+*.parquet
+
+# Trained models / ML artifacts
+*.joblib
+*.pkl
+*.onnx
+mlruns/
+models/
+
+# ---------- Local databases / dumps ----------
+*.db
+*.sqlite
+*.sqlite3
+*.sql.dump
+
+# ---------- Docker / infra local state ----------
+docker-compose.local.yml
+infra/**/data/
+
+# ---------- Logs ----------
+logs/
+*.log
+
+# ---------- Editor / OS ----------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+*.swp

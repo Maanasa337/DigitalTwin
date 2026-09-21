@@ -1,0 +1,28 @@
+{% extends "base.html.j2" %}
+{% import "_macros.html.j2" as m %}
+{% block content %}
+  <div class="tiles">
+    {{ m.tile("Health", data.health_pct|round(1) if data.health_pct is not none else none, "%") }}
+    {{ m.tile("Remaining life", data.rul|round(0)|int if data.rul is not none else none, " " ~ data.rul_unit) }}
+    {{ m.tile("Confidence", (data.confidence or "—")|title) }}
+    {{ m.tile("OEE", data.oee_pct|round(1) if data.oee_pct is not none else none, "%") }}
+    {{ m.tile("Alarms", data.alarm_count) }}
+    {{ m.tile("Open orders", data.open_work_orders) }}
+  </div>
+
+  {% if data.rul_low is not none and data.rul_high is not none %}
+    <p class="meta">90 % conformal interval: {{ data.rul_low|round(0)|int }} to {{ data.rul_high|round(0)|int }} {{ data.rul_unit }}.</p>
+  {% endif %}
+
+  <h2>Health over the period</h2>
+  {{ m.chart(charts, "health", "Health index over the reporting period") }}
+
+  <h2>Remaining useful life</h2>
+  {{ m.chart(charts, "rul", "Remaining useful life over the reporting period") }}
+
+  <h2>Alarms</h2>
+  {{ m.table(data.alarms, [("at", "Raised"), ("severity", "Severity"), ("title", "Alarm"), ("status", "Status")], "No alarms were raised.") }}
+
+  <h2>Work orders</h2>
+  {{ m.table(data.work_orders, [("number", "#"), ("title", "Task"), ("type", "Type"), ("status", "Status"), ("planned_start", "Planned"), ("technician", "Technician")], "No work orders were raised.") }}
+{% endblock %}

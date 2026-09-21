@@ -1,0 +1,111 @@
+# Oil-injected rotary screw air compressor, 22 kW.
+asset_type: compressor
+idle_power_fraction: 0.1
+eta_nominal: 0.93
+power_factor_rated: 0.87
+base_reject_rate: 0.005
+power_noise: {std: 0.1, jitter_ms: 25}
+load_noise: {std: 0.3, jitter_ms: 25}
+params:
+  pressure_bar: 7.5
+  pressure_tau_s: 60.0
+  valve_pressure_loss: 0.25
+  filter_pressure_loss_bar: 0.4
+  temp_rise_c: 50.0
+  airend_temp_c: 30.0
+  filter_temp_c: 8.0
+  temp_tau_s: 600.0
+  vib_base: 1.2
+  vib_load: 0.8
+  vib_damage: 9.0
+  vib_idle: 0.05
+  filter_dp_base_bar: 0.04
+  filter_dp_damage_bar: 0.4
+components:
+  - code: bearing
+    name: Air-end bearing
+    component_type: bearing
+    health_weight: 1.0
+    bearing: {n_balls: 12, ball_d_mm: 12.7, pitch_d_mm: 70.0, contact_angle_deg: 0.0, shaft_rpm: 2960}
+    process:
+      model: paris
+      params: {life_h: 1600, rpm: 2960, m: 3.0, a0_mm: 0.1, a_crit_mm: 2.5, stress_mpa: 110.0, y: 1.12}
+    failure_mode:
+      code: bearing_wear
+      name: Air-end bearing wear
+      description: Rolling-element bearing fatigue in the air-end; vibration RMS grows with the square of damage.
+      signature: {metrics: [bearing.vib_rms], pattern: trend}
+      severity: 3
+      driver: bearing.vib_rms
+    sensors:
+      - {code: vib_rms, name: Air-end vibration RMS, unit: mm/s, kind: vibration, min_valid: 0.0, max_valid: 50.0, warn_high: 4.5, alarm_high: 7.1,
+         noise: {std: 0.06, drift: 0.002, spike_prob: 0.002, dropout_prob: 0.001, jitter_ms: 25}}
+  - code: airend
+    name: Air-end
+    component_type: screw
+    health_weight: 1.0
+    process:
+      model: arrhenius
+      params: {life_h: 2200, cv: 0.2, load_exp: 1.0, ea_ev: 0.35, t_ref_c: 70.0}
+      temp_metric: airend.discharge_temp
+    failure_mode:
+      code: overheating
+      name: Air-end overheating
+      description: Oil breakdown and cooler fouling raise discharge temperature, which in turn accelerates oil ageing.
+      signature: {metrics: [airend.discharge_temp, motor.current], pattern: trend}
+      severity: 3
+      driver: airend.discharge_temp
+    sensors:
+      - {code: discharge_pressure, name: Discharge pressure, unit: bar, kind: pressure, min_valid: 0.0, max_valid: 16.0, warn_low: 6.0, alarm_low: 5.5,
+         noise: {std: 0.03, drift: 0.002, dropout_prob: 0.001, jitter_ms: 25}}
+      - {code: discharge_temp, name: Discharge temperature, unit: °C, kind: temperature, min_valid: -20.0, max_valid: 150.0, warn_high: 88.0, alarm_high: 96.0,
+         noise: {std: 0.2, drift: 0.003, dropout_prob: 0.001, jitter_ms: 25}}
+  - code: valve
+    name: Inlet and check valves
+    component_type: valve
+    health_weight: 0.7
+    process:
+      model: gamma
+      params: {life_h: 2400, cv: 0.25, load_exp: 1.0}
+    failure_mode:
+      code: valve_leakage
+      name: Valve leakage
+      description: Worn valve seats leak compressed air; discharge pressure sags while the motor works harder.
+      signature: {metrics: [airend.discharge_pressure, motor.current, power_kw], pattern: trend}
+      severity: 2
+      driver: airend.discharge_pressure
+      quality_impact: 0.2
+  - code: filter
+    name: Intake air filter
+    component_type: other
+    health_weight: 0.4
+    process:
+      model: wiener
+      params: {life_h: 1500, cv: 0.08, load_exp: 1.0}
+    failure_mode:
+      code: filter_clogging
+      name: Intake filter clogging
+      description: Dust loading raises filter differential pressure, reducing delivery and raising discharge temperature.
+      signature: {metrics: [filter.dp, airend.discharge_temp], pattern: trend}
+      severity: 1
+      driver: filter.dp
+    sensors:
+      - {code: dp, name: Intake filter differential pressure, unit: bar, kind: pressure, min_valid: 0.0, max_valid: 1.0, warn_high: 0.3, alarm_high: 0.4,
+         noise: {std: 0.004, dropout_prob: 0.001, jitter_ms: 25}}
+  - code: motor
+    name: Drive motor
+    component_type: motor
+    health_weight: 0.8
+    process:
+      model: motor_efficiency
+      params: {life_h: 3000, eta0: 0.93, k: 0.12, cv: 0.15, load_exp: 2.0}
+    failure_mode:
+      code: motor_efficiency_loss
+      name: Drive motor efficiency loss
+      description: Motor efficiency declines; current and power rise at the same air demand.
+      signature: {metrics: [motor.current, power_kw], pattern: trend}
+      severity: 2
+      driver: motor.current
+    sensors:
+      - {code: current, name: Motor current, unit: A, kind: current, min_valid: 0.0, max_valid: 80.0, warn_high: 40.0, alarm_high: 45.0,
+         noise: {std: 0.2, drift: 0.002, dropout_prob: 0.001, jitter_ms: 25}}

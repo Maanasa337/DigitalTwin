@@ -1,0 +1,40 @@
+[project]
+name = "twinvoice-pdm"
+version = "0.1.0"
+description = "Predictive maintenance pipeline: features, anomaly, failure classification, RUL estimation"
+requires-python = ">=3.12,<3.13"
+license = "Apache-2.0"
+dependencies = [
+    "numpy>=2.0,<3",
+    "pandas>=2.3,<3",
+    "scikit-learn>=1.6,<2",
+    "lightgbm>=4.6,<5",
+    "mapie>=1.5,<2",
+    "mlflow>=2.21,<3",
+    # Keeps the resolver off an llvmlite that refuses Python 3.12 (see packages/xai).
+    "numba>=0.61,<1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9,<10",
+    "ruff>=0.16,<0.17",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/twinvoice_pdm"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

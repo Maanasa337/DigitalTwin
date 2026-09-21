@@ -1,0 +1,97 @@
+# Belt conveyor with 4 kW geared drive.
+asset_type: conveyor
+idle_power_fraction: 0.05
+eta_nominal: 0.88
+power_factor_rated: 0.82
+base_reject_rate: 0.002
+power_noise: {std: 0.02, jitter_ms: 25}
+load_noise: {std: 0.3, jitter_ms: 25}
+params:
+  belt_speed_m_s: 1.6
+  belt_slip: 0.12
+  vib_base: 0.9
+  vib_load: 0.4
+  vib_damage: 8.0
+  vib_misalign: 1.5
+  vib_idle: 0.03
+  axial_base: 0.4
+  axial_load: 0.2
+  axial_damage: 6.0
+  motor_temp_rise_c: 25.0
+  motor_damage_temp_c: 25.0
+  motor_tau_s: 1200.0
+components:
+  - code: bearing
+    name: Drive pulley bearing
+    component_type: bearing
+    health_weight: 1.0
+    bearing: {n_balls: 8, ball_d_mm: 9.53, pitch_d_mm: 46.0, contact_angle_deg: 0.0, shaft_rpm: 1450}
+    process:
+      model: paris
+      params: {life_h: 1800, rpm: 1450, m: 3.0, a0_mm: 0.1, a_crit_mm: 2.0, stress_mpa: 100.0, y: 1.12}
+    failure_mode:
+      code: bearing_wear
+      name: Drive pulley bearing wear
+      description: Bearing raceway fatigue on the drive pulley; radial vibration RMS rises.
+      signature: {metrics: [bearing.vib_rms], pattern: trend}
+      severity: 3
+      driver: bearing.vib_rms
+    sensors:
+      - {code: vib_rms, name: Pulley bearing vibration RMS, unit: mm/s, kind: vibration, min_valid: 0.0, max_valid: 50.0, warn_high: 4.5, alarm_high: 7.1,
+         noise: {std: 0.05, drift: 0.002, spike_prob: 0.002, dropout_prob: 0.001, jitter_ms: 25}}
+  - code: drive
+    name: Drive train alignment
+    component_type: other
+    health_weight: 0.7
+    process:
+      model: wiener
+      params: {life_h: 1600, cv: 0.1, load_exp: 1.0}
+    failure_mode:
+      code: misalignment
+      name: Shaft misalignment
+      description: Motor-gearbox coupling misalignment; axial vibration dominates and radial vibration follows.
+      signature: {metrics: [drive.vib_axial, bearing.vib_rms], pattern: trend}
+      severity: 2
+      driver: drive.vib_axial
+    sensors:
+      - {code: vib_axial, name: Drive axial vibration, unit: mm/s, kind: vibration, min_valid: 0.0, max_valid: 50.0, warn_high: 3.5, alarm_high: 5.5,
+         noise: {std: 0.04, spike_prob: 0.001, dropout_prob: 0.001, jitter_ms: 25}}
+  - code: belt
+    name: Conveyor belt
+    component_type: belt
+    health_weight: 0.6
+    process:
+      model: gamma
+      params: {life_h: 1500, cv: 0.2, load_exp: 1.0, speed_exp: 1.0}
+    failure_mode:
+      code: belt_slip
+      name: Belt wear and slip
+      description: Belt stretch and lagging wear cause slip; belt speed drops below drive speed and throughput falls.
+      signature: {metrics: [belt.speed, motor.current], pattern: trend}
+      severity: 2
+      driver: belt.speed
+      quality_impact: 0.05
+      cycle_impact: 0.12
+    sensors:
+      - {code: speed, name: Belt speed, unit: m/s, kind: speed, min_valid: 0.0, max_valid: 3.0, warn_low: 1.45, alarm_low: 1.38,
+         noise: {std: 0.005, dropout_prob: 0.001, jitter_ms: 25}}
+  - code: motor
+    name: Drive motor
+    component_type: motor
+    health_weight: 0.8
+    process:
+      model: arrhenius
+      params: {life_h: 2600, cv: 0.2, load_exp: 1.0, ea_ev: 0.4, t_ref_c: 50.0}
+      temp_metric: motor.temp
+    failure_mode:
+      code: motor_overheating
+      name: Motor winding overheating
+      description: Insulation ageing follows Arrhenius kinetics; winding temperature and current rise together.
+      signature: {metrics: [motor.temp, motor.current], pattern: trend}
+      severity: 3
+      driver: motor.temp
+    sensors:
+      - {code: current, name: Motor current, unit: A, kind: current, min_valid: 0.0, max_valid: 15.0, warn_high: 8.0, alarm_high: 9.0,
+         noise: {std: 0.04, drift: 0.002, dropout_prob: 0.001, jitter_ms: 25}}
+      - {code: temp, name: Motor temperature, unit: °C, kind: temperature, min_valid: -20.0, max_valid: 150.0, warn_high: 68.0, alarm_high: 74.0,
+         noise: {std: 0.2, drift: 0.003, dropout_prob: 0.001, jitter_ms: 25}}

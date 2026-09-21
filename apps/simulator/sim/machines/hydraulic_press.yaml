@@ -1,0 +1,118 @@
+# 200 t hydraulic press with 30 kW pump motor.
+asset_type: hydraulic_press
+idle_power_fraction: 0.07
+eta_nominal: 0.93
+power_factor_rated: 0.86
+base_reject_rate: 0.008
+power_noise: {std: 0.15, jitter_ms: 25}
+load_noise: {std: 0.3, jitter_ms: 25}
+params:
+  flow_l_min: 140.0
+  pump_flow_loss: 0.3
+  pressure_bar: 210.0
+  seal_pressure_loss: 0.2
+  pump_pressure_loss_bar: 12.0
+  oil_temp_rise_c: 22.0
+  oil_damage_temp_c: 25.0
+  oil_pump_temp_c: 8.0
+  oil_tau_s: 1800.0
+  valve_ms: 45.0
+  valve_damage_ms: 120.0
+components:
+  - code: pump
+    name: Hydraulic pump
+    component_type: pump
+    health_weight: 1.0
+    process:
+      model: gamma
+      params: {life_h: 1800, cv: 0.2, load_exp: 1.0}
+    failure_mode:
+      code: pump_wear
+      name: Pump internal wear
+      description: Internal leakage lowers volumetric efficiency; delivered flow drops and oil runs warmer.
+      signature: {metrics: [pump.flow, oil.temp], pattern: trend}
+      severity: 3
+      driver: pump.flow
+      cycle_impact: 0.3
+    sensors:
+      - {code: flow, name: Pump flow, unit: L/min, kind: flow, min_valid: 0.0, max_valid: 200.0, warn_low: 115.0, alarm_low: 105.0,
+         noise: {std: 0.6, drift: 0.002, dropout_prob: 0.001, jitter_ms: 25}}
+      - {code: pressure, name: Hydraulic pressure, unit: bar, kind: pressure, min_valid: 0.0, max_valid: 350.0, warn_low: 170.0, alarm_low: 155.0,
+         noise: {std: 1.0, spike_prob: 0.001, dropout_prob: 0.001, jitter_ms: 25}}
+  - code: seal
+    name: Cylinder seals
+    component_type: seal
+    health_weight: 0.8
+    process:
+      model: wiener
+      params: {life_h: 1500, cv: 0.1, load_exp: 1.0}
+    failure_mode:
+      code: seal_leakage
+      name: Cylinder seal leakage
+      description: Seal extrusion and wear let oil bypass the piston; system pressure cannot be held.
+      signature: {metrics: [pump.pressure], pattern: trend}
+      severity: 3
+      driver: pump.pressure
+      quality_impact: 0.08
+      cycle_impact: 0.1
+  - code: oil
+    name: Hydraulic oil
+    component_type: other
+    health_weight: 0.5
+    process:
+      model: arrhenius
+      params: {life_h: 2400, cv: 0.2, load_exp: 1.0, ea_ev: 0.4, t_ref_c: 48.0}
+      temp_metric: oil.temp
+    failure_mode:
+      code: oil_overheating
+      name: Oil degradation and overheating
+      description: Oxidation of the hydraulic oil, accelerated by temperature, raises oil temperature further.
+      signature: {metrics: [oil.temp], pattern: trend}
+      severity: 2
+      driver: oil.temp
+    sensors:
+      - {code: temp, name: Oil temperature, unit: °C, kind: temperature, min_valid: -20.0, max_valid: 120.0, warn_high: 60.0, alarm_high: 70.0,
+         noise: {std: 0.2, drift: 0.003, dropout_prob: 0.001, jitter_ms: 25}}
+  - code: valve
+    name: Directional control valve
+    component_type: valve
+    health_weight: 0.6
+    process:
+      model: gamma
+      params: {life_h: 2000, cv: 0.25, load_exp: 1.0}
+    failure_mode:
+      code: valve_sticking
+      name: Valve spool sticking
+      description: Varnish and contamination slow the spool; switching time increases and strokes lengthen.
+      signature: {metrics: [valve.switch_time, pump.pressure], pattern: trend}
+      severity: 2
+      driver: valve.switch_time
+      quality_impact: 0.04
+      cycle_impact: 0.2
+    sensors:
+      - {code: switch_time, name: Valve switching time, unit: ms, kind: other, min_valid: 0.0, max_valid: 500.0, warn_high: 90.0, alarm_high: 130.0,
+         noise: {std: 1.5, spike_prob: 0.002, dropout_prob: 0.001, jitter_ms: 25}}
+  - code: motor
+    name: Pump motor
+    component_type: motor
+    health_weight: 0.8
+    process:
+      model: motor_efficiency
+      params: {life_h: 3200, eta0: 0.93, k: 0.12, cv: 0.15, load_exp: 2.0}
+    failure_mode:
+      code: motor_efficiency_loss
+      name: Pump motor efficiency loss
+      description: Motor efficiency declines; current and power rise for the same hydraulic work.
+      signature: {metrics: [motor.current, power_kw], pattern: trend}
+      severity: 2
+      driver: motor.current
+    sensors:
+      - {code: current, name: Pump motor current, unit: A, kind: current, min_valid: 0.0, max_valid: 100.0, warn_high: 55.0, alarm_high: 62.0,
+         noise: {std: 0.25, drift: 0.002, dropout_prob: 0.001, jitter_ms: 25}}
+  - code: ram
+    name: Ram
+    component_type: other
+    health_weight: 0.3
+    sensors:
+      - {code: cycle_count, name: Press cycle count, unit: count, kind: count, min_valid: 0.0, max_valid: 1000000000.0,
+         noise: {jitter_ms: 25}}

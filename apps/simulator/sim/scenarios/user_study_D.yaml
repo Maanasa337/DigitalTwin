@@ -1,0 +1,12 @@
+code: user_study_d
+name: "User study D: mixed failure modes"
+description: >-
+  moulder-01 suffers heater band degradation and screw wear at the same time, while the zone 1
+  thermocouple slowly drifts. Rejects rise from two causes.
+seed: 104
+time_scale: 60
+duration_h: 6
+events:
+  - {at_h: 0.25, action: inject_fault, asset: moulder-01, failure_mode: heater_failure, mode: gradual, severity: 0.7}
+  - {at_h: 0.5, action: inject_fault, asset: moulder-01, failure_mode: screw_wear, mode: gradual, severity: 0.8}
+  - {at_h: 1.0, action: sensor_fault, asset: moulder-01, failure_mode: sensor_drift, metric: barrel.zone1_temp, severity: 0.3}

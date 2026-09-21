@@ -1,0 +1,13 @@
+code: bearing_failure_cnc01
+name: Spindle bearing failure on cnc-01
+description: >-
+  cnc-01 runs at a fixed 85 % load while a spindle bearing defect grows (Paris-law crack growth,
+  about 6.75 h to failure). The machine goes DOWN, is repaired at 9 h and returns to service.
+  Ground-truth RUL decreases monotonically until the failure.
+seed: 11
+time_scale: 100
+duration_h: 12
+events:
+  - {at_h: 0, action: set_load, asset: cnc-01, load_pct: 85}
+  - {at_h: 0, action: inject_fault, asset: cnc-01, failure_mode: bearing_wear, mode: gradual, severity: 0.75}
+  - {at_h: 9, action: reset, asset: cnc-01, component_code: spindle}

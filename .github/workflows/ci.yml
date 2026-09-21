@@ -1,0 +1,72 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: timescale/timescaledb-ha:pg16
+        env:
+          POSTGRES_USER: twinvoice
+          POSTGRES_PASSWORD: twinvoice
+          POSTGRES_DB: twinvoice_test
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U twinvoice" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Enable extensions
+        run: PGPASSWORD=twinvoice psql -h 127.0.0.1 -p 5433 -U twinvoice -d twinvoice_test -c "CREATE EXTENSION IF NOT EXISTS timescaledb; CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+      - name: contracts
+        working-directory: packages/contracts
+        run: uv run ruff check . && uv run ruff format --check . && uv run pytest
+      - name: xai
+        working-directory: packages/xai
+        run: uv run ruff check . && uv run pytest
+      - name: nlu
+        working-directory: packages/nlu
+        run: uv run ruff check . && uv run pytest
+      - name: pdm
+        working-directory: packages/pdm
+        run: uv run ruff check . && uv run pytest
+      - name: simulator
+        working-directory: apps/simulator
+        run: uv run ruff check . && uv run ruff format --check . && uv run pytest
+      - name: api
+        working-directory: apps/api
+        run: |
+          uv run ruff check app alembic tests
+          uv run ruff format --check app alembic tests
+          uv run mypy app
+          uv run alembic upgrade head && uv run alembic check
+          uv run pytest
+        env:
+          TV_DATABASE_URL: postgresql+psycopg://twinvoice:twinvoice@127.0.0.1:5433/twinvoice_test
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm test
+      - run: pnpm build

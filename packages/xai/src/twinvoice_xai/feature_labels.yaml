@@ -1,0 +1,94 @@
+# Feature -> human label, unit, direction words and actionable range.
+#
+# `actionable: true` means an operator can change this value directly; only those features are
+# varied when searching for a counterfactual. `min`/`max` bound that search.
+# The suffix section maps the windowed-feature suffixes produced by twinvoice_pdm.features,
+# so `spindle.vib_rms_std` resolves without an entry of its own.
+
+features:
+  spindle.vib_rms:
+    label: Spindle vibration
+    unit: mm/s
+    higher_is: worse
+    actionable: false
+  motor.current:
+    label: Motor current
+    unit: A
+    higher_is: worse
+    actionable: false
+  motor.temp:
+    label: Motor temperature
+    unit: "°C"
+    higher_is: worse
+    actionable: false
+  bearing.temp:
+    label: Bearing temperature
+    unit: "°C"
+    higher_is: worse
+    actionable: false
+  coolant_temp:
+    label: Coolant temperature
+    unit: "°C"
+    higher_is: worse
+    actionable: true
+    min: 15.0
+    max: 45.0
+    step: 1.0
+  load_pct:
+    label: Load
+    unit: "%"
+    higher_is: worse
+    actionable: true
+    min: 20.0
+    max: 100.0
+    step: 5.0
+  speed:
+    label: Spindle speed
+    unit: rpm
+    higher_is: worse
+    actionable: true
+    min: 500.0
+    max: 12000.0
+    step: 250.0
+  lube_interval:
+    label: Lubrication interval
+    unit: h
+    higher_is: worse
+    actionable: true
+    min: 4.0
+    max: 168.0
+    step: 4.0
+  power_kw:
+    label: Power draw
+    unit: kW
+    higher_is: worse
+    actionable: false
+  pressure:
+    label: Hydraulic pressure
+    unit: bar
+    higher_is: worse
+    actionable: false
+  flow:
+    label: Coolant flow
+    unit: L/min
+    higher_is: better
+    actionable: false
+  energy_per_unit:
+    label: Energy per unit
+    unit: kWh/unit
+    higher_is: worse
+    actionable: false
+
+# Appended to the base label when the feature name ends with one of these.
+suffixes:
+  _mean: average
+  _std: variability
+  _min: minimum
+  _max: peak
+  _rms: RMS
+  _slope: trend
+  _kurtosis: impulsiveness
+  _skew: asymmetry
+  _peak_factor: peak factor
+  _spectral_centroid: spectral centroid
+  _peak_freq: peak frequency

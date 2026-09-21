@@ -1,0 +1,22 @@
+{% extends "base.html.j2" %}
+{% import "_macros.html.j2" as m %}
+{% block content %}
+  <div class="tiles">
+    {{ m.tile("Energy", data.energy_kwh|round(1) if data.energy_kwh is not none else none, " kWh") }}
+    {{ m.tile("Cost", data.cost|round(0)|int if data.cost is not none else none, " " ~ data.currency) }}
+    {{ m.tile("CO2", data.co2_kg|round(1) if data.co2_kg is not none else none, " kg") }}
+    {{ m.tile("Peak demand", data.peak_demand_kw|round(1) if data.peak_demand_kw is not none else none, " kW") }}
+    {{ m.tile("Idle share", data.idle_energy_share_pct|round(1) if data.idle_energy_share_pct is not none else none, "%") }}
+    {{ m.tile("Per unit", data.energy_per_unit|round(3) if data.energy_per_unit is not none else none, " kWh") }}
+  </div>
+
+  <h2>Energy intensity against baseline</h2>
+  {{ m.chart(charts, "intensity", "Energy per unit over the reporting period") }}
+
+  <h2>Top consumers</h2>
+  {{ m.chart(charts, "consumers", "The five largest consumers in the period") }}
+  {{ m.table(data.top_consumers, [("asset", "Machine"), ("energy_kwh", "kWh")], "No consumption was recorded.") }}
+
+  <h2>Anomalies</h2>
+  {{ m.table(data.anomalies, [("at", "When"), ("asset", "Machine"), ("observed_kwh", "Observed kWh"), ("expected_kwh", "Expected kWh"), ("sigma", "Sigma")], "No consumption anomaly exceeded three sigma.") }}
+{% endblock %}

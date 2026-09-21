@@ -1,0 +1,27 @@
+{% extends "base.html.j2" %}
+{% import "_macros.html.j2" as m %}
+{% block content %}
+  <div class="tiles">
+    {{ m.tile("Predictions", data.prediction_count) }}
+    {{ m.tile("Alarms", data.alarm_count) }}
+    {{ m.tile("Work orders", data.work_order_count) }}
+    {{ m.tile("Window", data.window_hours, " h either side") }}
+  </div>
+
+  <h2>What was recommended</h2>
+  {% if data.recommended_actions %}
+    <ul>{% for action in data.recommended_actions %}<li>{{ action }}</li>{% endfor %}</ul>
+  {% else %}
+    <p class="empty">No action had been recommended before the failure.</p>
+  {% endif %}
+
+  <h2>What was done</h2>
+  {% if data.actions_taken %}
+    <ul>{% for outcome in data.actions_taken %}<li>{{ outcome }}</li>{% endfor %}</ul>
+  {% else %}
+    <p class="empty">No work order outcome was recorded.</p>
+  {% endif %}
+
+  <h2>Timeline</h2>
+  {{ m.table(data.timeline, [("at", "When"), ("kind", "Event"), ("detail", "Detail"), ("top_driver", "Top driver"), ("recommended", "Recommended")], "Nothing was recorded in this window.") }}
+{% endblock %}

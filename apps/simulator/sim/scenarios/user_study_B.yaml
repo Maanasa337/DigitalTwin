@@ -1,0 +1,11 @@
+code: user_study_b
+name: "User study B: motor overheating"
+description: >-
+  conveyor-02 motor windings overheat (Arrhenius insulation ageing). Motor temperature and current rise
+  while press-01 is legitimately run hotter at 100 % load as a distractor.
+seed: 102
+time_scale: 60
+duration_h: 6
+events:
+  - {at_h: 0.25, action: inject_fault, asset: conveyor-02, failure_mode: motor_overheating, mode: gradual, severity: 0.85}
+  - {at_h: 0.5, action: set_load, asset: press-01, load_pct: 100}

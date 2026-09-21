@@ -1,0 +1,455 @@
+# Voice command grammar (PRD Appendix A, FR-NL-01).
+#
+# Template syntax, compiled by rules.py:
+#   {slot}      a slot value          -> named capture group
+#   (a|b)       alternatives          -> non-capturing alternation
+#   [word]      optional literal      -> optional group, surrounding whitespace absorbed
+# Everything else matches literally after normalisation (lowercase, punctuation stripped).
+#
+# `samples` supply slot fillers for the generated test suite (FR-NL-06); they are never used at runtime.
+
+version: 1
+
+control:
+  # Only these exact phrases execute a read-back (Appendix A). Anything else cancels.
+  confirm:
+    en: ["confirm", "yes confirm", "confirmed", "yes go ahead", "go ahead"]
+    hi: ["haan confirm", "confirm karo", "haan karo", "theek hai confirm"]
+  cancel:
+    en: ["cancel", "no", "stop", "abort", "never mind"]
+    hi: ["cancel", "nahi", "rehne do", "band karo"]
+  repeat:
+    en: ["repeat", "say that again", "come again", "repeat that"]
+    hi: ["phir se bolo", "dobara bolo"]
+  slower:
+    en: ["slower", "speak slower", "slow down"]
+    hi: ["dheere bolo"]
+
+intents:
+
+  - name: get_machine_status
+    tier: T0
+    summary: Health, RUL and top driver for one asset.
+    slots:
+      - {name: asset, type: asset, required: true, context: current_asset}
+    samples:
+      asset: ["compressor two", "cnc three", "conveyor one", "press four"]
+    templates:
+      en:
+        - "how is {asset}"
+        - "how is {asset} doing"
+        - "hows {asset}"
+        - "[what is the] status of {asset}"
+        - "status {asset}"
+        - "give me the status of {asset}"
+        - "tell me about {asset}"
+        - "health of {asset}"
+        - "what is the health of {asset}"
+        - "how healthy is {asset}"
+        - "is {asset} (ok|okay|fine|healthy)"
+        - "check {asset}"
+        - "[what is the] remaining useful life of {asset}"
+        - "how much life is left on {asset}"
+      hi:
+        - "{asset} ka (haal|status) (kya hai|bataao)"
+        - "{asset} kaisa hai"
+        - "{asset} ki health (kya hai|bataao)"
+        - "{asset} theek hai kya"
+        - "kya haal hai {asset} ka"
+      hinglish:
+        - "{asset} ka status batao"
+        - "{asset} kaisa chal raha hai"
+        - "{asset} ki condition kya hai"
+        - "check karo {asset}"
+
+  - name: explain_prediction
+    tier: T0
+    summary: Top-3 attributions for the asset's latest prediction, in words.
+    slots:
+      - {name: asset, type: asset, required: false, context: current_asset}
+    samples:
+      asset: ["compressor two", "cnc three"]
+    templates:
+      en:
+        - "why"
+        - "why is (it|that) flagged"
+        - "why is {asset} flagged"
+        - "what is causing (it|that)"
+        - "whats causing (it|that)"
+        - "explain (it|that|this)"
+        - "explain the prediction"
+        - "explain {asset}"
+        - "why do you say that"
+        - "what is the reason"
+        - "what drove (it|that|the prediction)"
+        - "tell me why"
+        - "why is {asset} at risk"
+      hi:
+        - "kyun"
+        - "aisa kyun hai"
+        - "{asset} mein kya problem hai"
+        - "wajah kya hai"
+        - "samjhao"
+      hinglish:
+        - "why bolo"
+        - "iska reason kya hai"
+        - "{asset} ka reason batao"
+        - "explain karo"
+
+  - name: get_counterfactual
+    tier: T0
+    summary: Actionable changes that would extend life, with the expected gain.
+    slots:
+      - {name: asset, type: asset, required: false, context: current_asset}
+      - {name: target, type: number, required: false}
+    samples:
+      asset: ["compressor two", "press four"]
+      target: ["40", "20"]
+    templates:
+      en:
+        - "what would fix (it|that|this)"
+        - "how do i fix (it|that)"
+        - "how do i extend its life"
+        - "how can i extend the life of {asset}"
+        - "what can i change"
+        - "what should i change"
+        - "how do i gain {target} cycles"
+        - "what would give me {target} more cycles"
+        - "what would improve (it|that)"
+        - "how do i make it last longer"
+        - "counterfactual [for {asset}]"
+        - "what would i have to change"
+      hi:
+        - "isko kaise theek karein"
+        - "kya badalna padega"
+        - "life kaise badhaye"
+        - "{asset} ki life kaise badhe"
+      hinglish:
+        - "fix kaise karein"
+        - "kya change karna hoga"
+        - "life extend kaise kare"
+
+  - name: run_what_if
+    tier: T1
+    summary: Re-run the RUL forecast under a hypothetical change. Results are hypothetical.
+    slots:
+      - {name: asset, type: asset, required: false, context: current_asset}
+      - {name: parameter, type: enum, required: true, values: [load, speed, maintenance_at]}
+      - {name: value, type: text, required: true}
+    samples:
+      asset: ["compressor two", "cnc three"]
+      value: ["80 percent", "next week", "70 percent"]
+    templates:
+      en:
+        - "what if we reduce load to {value}"
+        - "what if we drop the load to {value}"
+        - "what if load is {value}"
+        - "what if we run {asset} at {value}"
+        - "what if we reduce speed to {value}"
+        - "what if we service (it|{asset}) {value}"
+        - "what if we service (it|{asset}) {value} instead"
+        - "simulate load at {value}"
+        - "simulate {asset} at {value}"
+        - "what happens if we reduce load to {value}"
+        - "what happens if we wait until {value}"
+        - "what if we reduce load to {value} on {asset}"
+        - "what if we reduce speed to {value} on {asset}"
+        - "what if load on {asset} is {value}"
+        - "what happens if we reduce load to {value} on {asset}"
+        - "what if {asset} runs at {value}"
+      hi:
+        - "agar load {value} kar de to"
+        - "agar {asset} ko {value} chalaye to kya hoga"
+        - "agar service {value} kare to"
+      hinglish:
+        - "load {value} karein to kya hoga"
+        - "what if load {value}"
+        - "{asset} ko {value} pe chalaye to"
+
+  - name: list_alarms
+    tier: T0
+    summary: Open alarms for a scope, optionally filtered by severity.
+    slots:
+      - {name: scope, type: asset, required: false, context: current_asset}
+      - {name: severity, type: severity, required: false}
+    samples:
+      scope: ["line one", "compressor two", "press four"]
+      severity: ["critical", "warning"]
+    templates:
+      en:
+        - "any alarms [on {scope}]"
+        - "are there any alarms on {scope}"
+        - "show alarms [for {scope}]"
+        - "list alarms"
+        - "what alarms are open"
+        - "what is critical right now"
+        - "whats critical right now"
+        - "any {severity} alarms"
+        - "show me {severity} alarms [on {scope}]"
+        - "how many alarms are open"
+        - "alarms on {scope}"
+      hi:
+        - "kya koi alarm hai"
+        - "{scope} pe alarm hai kya"
+        - "alarm dikhao"
+        - "kaunse alarm khule hain"
+      hinglish:
+        - "alarms dikhao {scope} ke"
+        - "koi critical alarm hai kya"
+        - "{scope} pe kitne alarm hain"
+
+  - name: acknowledge_alarm
+    tier: T2
+    summary: Acknowledge an open alarm. Read back, then confirm.
+    slots:
+      - {name: alarm, type: asset, required: true, context: last_alarm}
+    samples:
+      alarm: ["press four", "compressor two", "cnc three"]
+    templates:
+      en:
+        - "acknowledge the alarm on {alarm}"
+        - "acknowledge {alarm}"
+        - "ack the alarm on {alarm}"
+        - "ack {alarm}"
+        - "acknowledge (it|that)"
+        - "acknowledge this alarm"
+        - "clear the alarm on {alarm}"
+        - "mark the alarm on {alarm} as seen"
+        - "i have seen the alarm on {alarm}"
+        - "acknowledge the {alarm} alarm"
+      hi:
+        - "{alarm} ka alarm acknowledge karo"
+        - "alarm acknowledge karo"
+        - "{alarm} ka alarm dekh liya"
+      hinglish:
+        - "ack kar do {alarm}"
+        - "alarm ack karo"
+        - "{alarm} wala alarm acknowledge"
+
+  - name: create_work_order
+    tier: T2
+    summary: Raise a maintenance work order. Read back every parameter, then confirm.
+    slots:
+      - {name: asset, type: asset, required: true, context: current_asset}
+      - {name: task, type: text, required: true}
+      - {name: when, type: datetime, required: false}
+      - {name: technician, type: text, required: false}
+    samples:
+      asset: ["compressor two", "press four"]
+      task: ["bearing replacement", "filter change", "lubrication"]
+      when: ["friday morning", "tomorrow", "next monday"]
+      technician: ["ravi", "priya"]
+    templates:
+      en:
+        - "schedule {task} for {asset} on {when}"
+        - "schedule {task} for {asset}"
+        - "create a work order for {asset}"
+        - "create a work order for {task} on {asset}"
+        - "raise a work order for {asset} for {task}"
+        - "book {task} on {asset} for {when}"
+        - "plan {task} for {asset} on {when}"
+        - "assign {task} on {asset} to {technician}"
+        - "schedule {task} for {asset} on {when} assigned to {technician}"
+        - "work order {task} on {asset}"
+        - "raise a work order on {asset} to {task}"
+        - "raise a work order on {asset} for {task}"
+        - "create a work order on {asset} to {task}"
+        - "create a work order for {asset} to {task}"
+        - "schedule maintenance on {asset}"
+        - "schedule {task} on {asset}"
+      hi:
+        - "{asset} ke liye {task} schedule karo"
+        - "{asset} ka work order banao"
+        - "{asset} pe {task} {when} ko karao"
+      hinglish:
+        - "{asset} ke liye work order banao"
+        - "{task} schedule kar do {asset} pe"
+        - "{asset} ka {task} {when} pe lagao"
+
+  - name: get_kpi
+    tier: T0
+    summary: One KPI for a scope and period, with the formula shown on screen.
+    slots:
+      - {name: kpi, type: kpi, required: true}
+      - {name: scope, type: asset, required: false, context: current_asset}
+      - {name: period, type: period, required: false}
+    samples:
+      kpi: ["oee", "availability", "energy per unit", "mtbf"]
+      scope: ["line two", "line one", "compressor two"]
+      period: ["this week", "today", "last week"]
+    templates:
+      en:
+        - "what is the {kpi} of {scope} {period}"
+        - "whats the {kpi} of {scope} {period}"
+        - "what is the {kpi} of {scope}"
+        - "{kpi} of {scope} {period}"
+        - "{kpi} for {scope}"
+        - "show me the {kpi} of {scope} {period}"
+        - "give me {kpi} for {scope} {period}"
+        - "how is the {kpi} {period}"
+        - "what is our {kpi} {period}"
+        - "biggest energy consumer {period}"
+        - "which asset uses the most energy {period}"
+      hi:
+        - "{scope} ka {kpi} {period} kya hai"
+        - "{kpi} bataao {scope} ka"
+        - "{period} ka {kpi} kya raha"
+      hinglish:
+        - "{scope} ka {kpi} batao"
+        - "{kpi} kitna hai {period}"
+        - "{period} me {scope} ka {kpi}"
+
+  - name: generate_report
+    tier: T2
+    summary: Generate a report. Read back type, scope and period, then confirm.
+    slots:
+      - {name: type, type: report_type, required: true}
+      - {name: scope, type: asset, required: false, context: current_asset}
+      - {name: period, type: period, required: false}
+    samples:
+      type: ["weekly maintenance", "energy", "machine health", "incident"]
+      scope: ["line one", "compressor two"]
+      period: ["this week", "last week"]
+    templates:
+      en:
+        - "generate the {type} report"
+        - "generate the {type} report for {scope}"
+        - "generate a {type} report for {scope} {period}"
+        - "create the {type} report"
+        - "make a {type} report for {scope}"
+        - "i need the {type} report"
+        - "send me the {type} report {period}"
+        - "{type} report for {scope}"
+        - "{type} report {period}"
+        - "run the {type} report"
+        - "incident report for the {scope} failure"
+      hi:
+        - "{type} report banao"
+        - "{scope} ki {type} report banao"
+        - "{period} ki {type} report chahiye"
+      hinglish:
+        - "{type} report generate karo"
+        - "{scope} ka {type} report bana do"
+        - "report banao {type} wali"
+
+  - name: set_simulation_scenario
+    tier: T3
+    summary: Drive the simulator (fault injection, time scale). Write-back, so T3.
+    slots:
+      - {name: scenario, type: text, required: true}
+      - {name: asset, type: asset, required: false, context: current_asset}
+    samples:
+      scenario: ["bearing fault", "tool wear", "a leak"]
+      asset: ["conveyor one", "cnc three"]
+    templates:
+      en:
+        - "inject a {scenario} on {asset}"
+        - "inject {scenario} on {asset}"
+        - "simulate a {scenario} on {asset}"
+        - "trigger a {scenario} on {asset}"
+        - "start the {scenario} scenario"
+        - "run the {scenario} scenario on {asset}"
+        - "cause a {scenario} on {asset}"
+        - "put a {scenario} into {asset}"
+        - "inject a {scenario}"
+        - "set the scenario to {scenario}"
+      hi:
+        - "{asset} pe {scenario} daalo"
+        - "{scenario} inject karo"
+        - "{scenario} scenario chalu karo"
+      hinglish:
+        - "{asset} me {scenario} inject karo"
+        - "{scenario} simulate karo {asset} pe"
+        - "scenario {scenario} start karo"
+
+  - name: navigate_dashboard
+    tier: T0
+    summary: Change the visible screen. Emits a WS event the front end consumes.
+    slots:
+      - {name: view, type: view, required: false}
+      - {name: asset, type: asset, required: false}
+      - {name: period, type: period, required: false}
+    samples:
+      view: ["energy", "alarms", "maintenance", "reports"]
+      asset: ["compressor two", "cnc three"]
+      period: ["this week", "today"]
+    templates:
+      en:
+        - "open {asset}"
+        - "show me {asset}"
+        - "go to {view}"
+        - "open the {view} page"
+        - "show {view}"
+        - "show {view} for {asset}"
+        - "show {view} for {asset} {period}"
+        - "take me to {view}"
+        - "navigate to {view}"
+        - "go back"
+        - "show the {view} screen"
+      hi:
+        - "{asset} kholo"
+        - "{view} dikhao"
+        - "{view} page kholo"
+        - "wapas jao"
+      hinglish:
+        - "{asset} open karo"
+        - "{view} pe le chalo"
+        - "back jao"
+
+  - name: give_feedback
+    tier: T2
+    summary: Record that an explanation was right or wrong, optionally naming a suspect sensor.
+    slots:
+      - {name: verdict, type: verdict, required: true}
+      - {name: reason, type: text, required: false}
+    samples:
+      reason: ["sensor four is faulty", "the vibration reading is wrong"]
+    templates:
+      en:
+        - "that explanation is wrong {reason}"
+        - "that explanation is wrong"
+        - "this explanation is wrong {reason}"
+        - "that is wrong {reason}"
+        - "i disagree {reason}"
+        - "i disagree"
+        - "that is not right {reason}"
+        - "the explanation is incorrect"
+        - "i agree with that"
+        - "that explanation is right"
+        - "that looks correct"
+      hi:
+        - "ye explanation galat hai"
+        - "ye galat hai {reason}"
+        - "main sehmat nahi hoon"
+        - "ye sahi hai"
+      hinglish:
+        - "explanation galat hai {reason}"
+        - "ye wrong hai"
+        - "agree karta hoon"
+
+  - name: help
+    tier: T0
+    summary: List what the assistant can do.
+    slots: []
+    samples: {}
+    templates:
+      en:
+        - "help"
+        - "what can you do"
+        - "what can i ask you"
+        - "what commands do you know"
+        - "show me the commands"
+        - "list your commands"
+        - "how do i use this"
+        - "what are my options"
+        - "i need help"
+        - "what else can you do"
+      hi:
+        - "madad"
+        - "tum kya kar sakte ho"
+        - "kya kya kar sakte ho"
+        - "commands bataao"
+      hinglish:
+        - "help karo"
+        - "kya kya puch sakta hoon"
+        - "commands list karo"

@@ -1,0 +1,9 @@
+*
+!packages/contracts
+!apps/simulator/pyproject.toml
+!apps/simulator/uv.lock
+!apps/simulator/sim
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache

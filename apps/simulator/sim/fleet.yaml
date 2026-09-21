@@ -1,0 +1,49 @@
+plant: {code: plant-01, name: Pune Plant, timezone: Asia/Kolkata}
+ambient_c: 30.0
+maintenance_duration_s: 1800.0
+working_days: [0, 1, 2, 3, 4, 5]  # Monday-Saturday; Sunday idle
+shifts:
+  - {code: A, name: Morning, start: "06:00", end: "14:00"}
+  - {code: B, name: Afternoon, start: "14:00", end: "22:00"}
+  - {code: C, name: Night, start: "22:00", end: "06:00"}
+lines:
+  - code: line-01
+    name: Machining Line
+    sequence: 1
+    plan: {A: 90.0, B: 85.0, C: 65.0}
+    assets:
+      - {code: cnc-01, name: CNC Mill 01, asset_type: cnc_mill, manufacturer: Deccan Machine Tools, model: VMC-850,
+         serial_no: DMT-VMC850-21047, install_date: 2021-06-14, fidelity_level: 3, ideal_cycle_time_s: 90.0, rated_power_kw: 15.0,
+         position: {x: 0.0, y: 0.0, z: 0.0, rot: 0.0}}
+      - {code: cnc-02, name: CNC Mill 02, asset_type: cnc_mill, manufacturer: Deccan Machine Tools, model: VMC-850,
+         serial_no: DMT-VMC850-23112, install_date: 2023-04-01, fidelity_level: 3, ideal_cycle_time_s: 90.0, rated_power_kw: 15.0,
+         position: {x: 6.0, y: 0.0, z: 0.0, rot: 0.0}}
+      - {code: compressor-01, name: Compressor 01, asset_type: compressor, manufacturer: Sahyadri Pneumatics, model: RSC-22,
+         serial_no: SP-RSC22-19088, install_date: 2019-11-20, fidelity_level: 3, ideal_cycle_time_s: 60.0, rated_power_kw: 22.0,
+         position: {x: 12.0, y: 0.0, z: 0.0, rot: 90.0}}
+      - {code: conveyor-01, name: Conveyor 01, asset_type: conveyor, manufacturer: Indus Conveyors, model: BC-600,
+         serial_no: IC-BC600-22301, install_date: 2022-02-08, fidelity_level: 3, ideal_cycle_time_s: 20.0, rated_power_kw: 4.0,
+         position: {x: 18.0, y: 0.0, z: 0.0, rot: 0.0}}
+      - {code: conveyor-02, name: Conveyor 02, asset_type: conveyor, manufacturer: Indus Conveyors, model: BC-600,
+         serial_no: IC-BC600-22302, install_date: 2022-02-08, fidelity_level: 3, ideal_cycle_time_s: 20.0, rated_power_kw: 4.0,
+         position: {x: 24.0, y: 0.0, z: 0.0, rot: 0.0}}
+  - code: line-02
+    name: Forming Line
+    sequence: 2
+    plan: {A: 85.0, B: 80.0, C: 60.0}
+    assets:
+      - {code: press-01, name: Hydraulic Press 01, asset_type: hydraulic_press, manufacturer: Western Hydraulics, model: HP-200T,
+         serial_no: WH-HP200-20015, install_date: 2020-08-17, fidelity_level: 3, ideal_cycle_time_s: 30.0, rated_power_kw: 30.0,
+         position: {x: 0.0, y: 10.0, z: 0.0, rot: 0.0}}
+      - {code: moulder-01, name: Injection Moulder 01, asset_type: injection_moulder, manufacturer: Konkan Plastmach, model: IMM-120,
+         serial_no: KP-IMM120-21560, install_date: 2021-01-25, fidelity_level: 3, ideal_cycle_time_s: 45.0, rated_power_kw: 35.0,
+         position: {x: 6.0, y: 10.0, z: 0.0, rot: 0.0}}
+      - {code: moulder-02, name: Injection Moulder 02, asset_type: injection_moulder, manufacturer: Konkan Plastmach, model: IMM-120,
+         serial_no: KP-IMM120-24007, install_date: 2024-03-11, fidelity_level: 3, ideal_cycle_time_s: 45.0, rated_power_kw: 35.0,
+         position: {x: 12.0, y: 10.0, z: 0.0, rot: 0.0}}
+      - {code: compressor-02, name: Compressor 02, asset_type: compressor, manufacturer: Sahyadri Pneumatics, model: RSC-22,
+         serial_no: SP-RSC22-23140, install_date: 2023-09-05, fidelity_level: 3, ideal_cycle_time_s: 60.0, rated_power_kw: 22.0,
+         position: {x: 18.0, y: 10.0, z: 0.0, rot: 90.0}}
+      - {code: conveyor-03, name: Conveyor 03, asset_type: conveyor, manufacturer: Indus Conveyors, model: BC-600,
+         serial_no: IC-BC600-24410, install_date: 2024-05-20, fidelity_level: 3, ideal_cycle_time_s: 20.0, rated_power_kw: 4.0,
+         position: {x: 24.0, y: 10.0, z: 0.0, rot: 0.0}}
