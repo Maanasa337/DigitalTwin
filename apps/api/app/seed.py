@@ -111,6 +111,10 @@ def apply_catalog(session: Session, twin_sync: TwinSyncService, catalog: dict[st
     for item in catalog["assets"]:
         existing = AssetRepository(session).get_by_code(item["code"])
         if existing is not None:
+            # Assets seeded before positions existed get the catalog's; one someone has moved keeps its own.
+            if existing.position is None and item.get("position"):
+                existing.position = dict(item["position"])
+                report.count(report.upserted, "asset_positions")
             if twin_sync.ditto.get_thing(existing.ditto_thing_id) is None:
                 components = assets.components.for_assets([existing.id])
                 twin_sync.create_thing(existing, lines[item["line_code"]], plant, components)

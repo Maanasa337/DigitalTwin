@@ -17,6 +17,7 @@ vi.mock('../../api/reports', () => ({
   deleteSchedule: vi.fn(),
 }));
 vi.mock('../../hooks/useAssets', () => ({
+  usePlants: () => ({ data: { items: [{ id: 'p1', code: 'plant-1', name: 'Pune Plant' }] } }),
   useAssets: () => ({ data: { items: [{ id: 'a1', code: 'cnc-01', name: 'CNC Mill 01' }] } }),
   useLines: () => ({ data: { items: [{ id: 'l1', code: 'line-1', name: 'Line 1', plant_id: 'p1' }] } }),
 }));

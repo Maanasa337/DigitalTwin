@@ -58,6 +58,11 @@ export async function fetchQualityMetrics(modelId: string): Promise<XaiQualityMe
   return data;
 }
 
+/** Queues a recompute of importance and explanation quality in the worker. */
+export async function refreshQualityMetrics(modelId: string): Promise<void> {
+  await http.post(`/models/${modelId}/quality-metrics/refresh`);
+}
+
 export async function fetchNarrationAudits(params?: {
   model?: string;
   passed?: boolean;

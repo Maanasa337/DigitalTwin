@@ -59,6 +59,21 @@ def test_tree_rolls_health_up_from_components(
     assert spindle["rul"] == {"point": 38, "low": 29, "high": 47, "unit": "cycles"}
 
 
+def test_tree_carries_plant_floor_position(client: TestClient, seeded_asset: dict[str, Any]) -> None:
+    """The 3D layout (FR-DT-07) places assets from the tree; an unplaced asset reports null."""
+    [asset] = client.get(f"{API}/twin/tree", headers=auth("technician")).json()["plants"][0]["lines"][0]["assets"]
+    assert asset["position"] is None and asset["model_3d_path"] is None
+
+    patched = client.patch(
+        f"{API}/assets/{seeded_asset['id']}",
+        json={"position": {"x": 6.0, "y": 10.0, "rot": 90.0}},
+        headers=auth("engineer"),
+    )
+    assert patched.status_code == 200, patched.text
+    [asset] = client.get(f"{API}/twin/tree", headers=auth("technician")).json()["plants"][0]["lines"][0]["assets"]
+    assert asset["position"] == {"x": 6.0, "y": 10.0, "z": 0.0, "rot": 90.0}
+
+
 def test_tree_survives_twin_store_outage(client: TestClient, ditto: FakeDitto, seeded_asset: dict[str, Any]) -> None:
     ditto.available = False
     resp = client.get(f"{API}/twin/tree", headers=auth("technician"))

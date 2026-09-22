@@ -1,0 +1,52 @@
+[project]
+name = "twinvoice-edge"
+version = "0.1.0"
+description = "TwinVoice M11 edge runner: MQTT in, windowed features, ONNX inference, local TreeSHAP, store-and-forward out"
+requires-python = ">=3.12,<3.13"
+license = "Apache-2.0"
+dependencies = [
+    "twinvoice-contracts",
+    # Features and bundle reading are the platform's own code, not a copy (FR-EDGE-02).
+    "twinvoice-pdm[onnx]",
+    "twinvoice-xai",
+    "lightgbm>=4.6,<5",
+    "numpy>=2.0,<3",
+    "pandas>=2.3,<3",
+    "paho-mqtt>=2.1,<3",
+    "pydantic>=2.11,<3",
+    "shap>=0.46,<1",
+    # shap pulls numba; without a floor the resolver picks an llvmlite that refuses Python 3.12.
+    "numba>=0.61,<1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9,<10",
+    "ruff>=0.16,<0.17",
+]
+
+[tool.uv.sources]
+twinvoice-contracts = { path = "../../packages/contracts", editable = true }
+twinvoice-pdm = { path = "../../packages/pdm", editable = true }
+twinvoice-xai = { path = "../../packages/xai", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["edge"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["edge"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

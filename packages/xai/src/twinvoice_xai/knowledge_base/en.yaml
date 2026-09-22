@@ -6,7 +6,7 @@ bearing_wear:
   symptom: Rising vibration with a warmer bearing housing
   likely_cause: Bearing raceway wear or loss of lubrication film
   recommended_action: Schedule a bearing inspection; re-grease and re-check vibration after 2 hours of running
-  evidence_metrics: [spindle.vib_rms, bearing.temp, motor.current]
+  evidence_metrics: [spindle.vib_rms, spindle.vib_kurtosis, spindle.temp, bearing.vib_rms, bearing.temp, motor.current]
   parts: [bearing-6206, grease-nlgi2]
   est_duration_min: 120
 
@@ -22,7 +22,7 @@ overheating:
   symptom: Temperature climbing while load stays flat
   likely_cause: Restricted coolant flow or a fouled heat exchanger
   recommended_action: Check coolant level and flow, clean the exchanger, verify the fan and thermostat
-  evidence_metrics: [motor.temp, coolant_temp, flow]
+  evidence_metrics: [motor.temp, coolant_temp, flow, airend.discharge_temp, motor.current]
   parts: [coolant-50l, filter-element]
   est_duration_min: 90
 
@@ -38,9 +38,129 @@ tool_wear:
   symptom: Rising spindle load and degrading surface finish
   likely_cause: Cutting edge worn past its limit
   recommended_action: Replace the tool and reset the tool-life counter
-  evidence_metrics: [load_pct, motor.current, spindle.vib_rms]
+  evidence_metrics: [tool.wear, spindle.load, load_pct, motor.current, spindle.vib_rms]
   parts: [insert-set]
   est_duration_min: 30
+
+ballscrew_wear:
+  symptom: Axis following error growing while the feed rate turns erratic
+  likely_cause: Ball screw preload loss and backlash in the nut
+  recommended_action: Run a backlash and circularity test on the axis; re-tension or replace the ball screw nut if backlash exceeds tolerance
+  evidence_metrics: [axis.following_error, axis.feed_rate]
+  parts: [ballscrew-nut-assy, wiper-seal]
+  est_duration_min: 240
+
+lubrication_loss:
+  symptom: Spindle temperature rising faster than load explains
+  likely_cause: Grease degraded or not reaching the spindle bearings
+  recommended_action: Check the lubrication unit and lines, re-grease the spindle and watch temperature over the next hour
+  evidence_metrics: [spindle.temp, spindle.vib_rms]
+  parts: [grease-nlgi2]
+  est_duration_min: 45
+
+motor_efficiency_loss:
+  symptom: Current and power rising for the same work
+  likely_cause: Motor winding insulation ageing or rotor losses lowering efficiency
+  recommended_action: Measure insulation resistance and phase balance at the next stop; plan a motor overhaul if efficiency keeps falling
+  evidence_metrics: [motor.current, drive.current, power_kw, drive.cycle_energy]
+  parts: [terminal-kit]
+  est_duration_min: 120
+
+filter_clogging:
+  symptom: Intake filter pressure drop rising with a warmer discharge
+  likely_cause: Dust loading on the intake filter
+  recommended_action: Replace the intake filter element and confirm the differential pressure returns to baseline
+  evidence_metrics: [filter.dp, airend.discharge_temp]
+  parts: [intake-filter-element]
+  est_duration_min: 30
+
+valve_leakage:
+  symptom: Discharge pressure sagging while the motor works harder
+  likely_cause: Worn valve seats leaking compressed air
+  recommended_action: Leak-test the inlet and discharge valves; lap or replace the seats
+  evidence_metrics: [airend.discharge_pressure, motor.current, power_kw]
+  parts: [valve-seat-kit]
+  est_duration_min: 150
+
+belt_slip:
+  symptom: Belt speed falling below drive speed as throughput drops
+  likely_cause: Belt stretch and worn pulley lagging causing slip
+  recommended_action: Re-tension the belt, inspect the pulley lagging and replace it if worn smooth
+  evidence_metrics: [belt.speed, motor.current]
+  parts: [belt-lagging-kit]
+  est_duration_min: 90
+
+misalignment:
+  symptom: Axial vibration dominating, with radial vibration following
+  likely_cause: Motor-to-gearbox coupling misalignment
+  recommended_action: Laser-align the motor and gearbox coupling and check the coupling insert for wear
+  evidence_metrics: [drive.vib_axial, bearing.vib_rms]
+  parts: [coupling-insert]
+  est_duration_min: 120
+
+motor_overheating:
+  symptom: Winding temperature and current rising together
+  likely_cause: Winding insulation ageing or a blocked cooling path
+  recommended_action: Clean the motor fan and fins, check the load against rating, and megger the windings at the next stop
+  evidence_metrics: [motor.temp, motor.current]
+  parts: [terminal-kit]
+  est_duration_min: 90
+
+oil_overheating:
+  symptom: Hydraulic oil running hotter cycle after cycle
+  likely_cause: Oil oxidation, accelerated by heat, and a fouled oil cooler
+  recommended_action: Sample the oil for oxidation, clean the oil cooler and change the oil if the analysis fails
+  evidence_metrics: [oil.temp]
+  parts: [hydraulic-oil-200l, filter-element]
+  est_duration_min: 180
+
+pump_wear:
+  symptom: Delivered flow dropping while the oil runs warmer
+  likely_cause: Internal leakage in the pump lowering volumetric efficiency
+  recommended_action: Measure case-drain flow; rebuild or replace the pump cartridge if leakage is above the limit
+  evidence_metrics: [pump.flow, oil.temp]
+  parts: [pump-cartridge-kit]
+  est_duration_min: 240
+
+seal_leakage:
+  symptom: System pressure cannot be held during the stroke
+  likely_cause: Worn or extruded cylinder seals letting oil bypass the piston
+  recommended_action: Run a cylinder bypass test and replace the piston seal kit
+  evidence_metrics: [pump.pressure]
+  parts: [cylinder-seal-kit]
+  est_duration_min: 180
+
+valve_sticking:
+  symptom: Valve switching time increasing and strokes lengthening
+  likely_cause: Varnish or contamination slowing the valve spool
+  recommended_action: Flush and clean the directional valve, replace the filter element and check oil cleanliness
+  evidence_metrics: [valve.switch_time, pump.pressure]
+  parts: [valve-spool-kit, filter-element]
+  est_duration_min: 90
+
+clamp_wear:
+  symptom: Clamp force falling short and parts showing flash
+  likely_cause: Wear in the toggle pins and bushes
+  recommended_action: Measure toggle clearances, replace worn pins and bushes, and re-adjust the mould height
+  evidence_metrics: [clamp.force]
+  parts: [toggle-pin-bush-set]
+  est_duration_min: 240
+
+heater_failure:
+  symptom: Barrel zone temperatures sagging below setpoint, nozzle zone first
+  likely_cause: Heater band elements losing output
+  recommended_action: Check each heater band's current and resistance and replace the weak band
+  evidence_metrics: [barrel.zone3_temp, barrel.zone2_temp, power_kw]
+  parts: [heater-band]
+  est_duration_min: 60
+
+screw_wear:
+  symptom: Peak injection pressure falling, with short shots
+  likely_cause: Back-flow past a worn check ring on the screw
+  recommended_action: Run a check-ring leak test; replace the check ring and inspect the screw flights
+  evidence_metrics: [screw.injection_pressure]
+  parts: [check-ring-assy]
+  est_duration_min: 300
 
 normal:
   symptom: No abnormal signature detected

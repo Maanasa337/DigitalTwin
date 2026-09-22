@@ -1,0 +1,23 @@
+# TimescaleDB, read through the least-privileged grafana_ro role (created by Alembic 0010_grafana_ro).
+apiVersion: 1
+
+datasources:
+  - name: TimescaleDB
+    uid: tv-timescale
+    type: grafana-postgresql-datasource
+    access: proxy
+    url: postgres:5432
+    user: grafana_ro
+    isDefault: true
+    editable: false
+    jsonData:
+      database: twinvoice
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: true
+      maxOpenConns: 10
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+    secureJsonData:
+      # Set by compose from GRAFANA_DB_PASSWORD; must match TV_GRAFANA_DB_PASSWORD at migrate time.
+      password: $GRAFANA_DB_PASSWORD

@@ -4,7 +4,7 @@ bearing_wear:
   symptom: कंपन बढ़ रहा है और बेयरिंग हाउसिंग गरम है
   likely_cause: बेयरिंग रेसवे की घिसावट या स्नेहन फ़िल्म की कमी
   recommended_action: बेयरिंग निरीक्षण निर्धारित करें; ग्रीस भरें और 2 घंटे चलाने के बाद कंपन दोबारा जाँचें
-  evidence_metrics: [spindle.vib_rms, bearing.temp, motor.current]
+  evidence_metrics: [spindle.vib_rms, spindle.vib_kurtosis, spindle.temp, bearing.vib_rms, bearing.temp, motor.current]
   parts: [bearing-6206, grease-nlgi2]
   est_duration_min: 120
 
@@ -20,7 +20,7 @@ overheating:
   symptom: लोड स्थिर रहते हुए तापमान बढ़ रहा है
   likely_cause: शीतलक प्रवाह बाधित है या हीट एक्सचेंजर जाम है
   recommended_action: शीतलक स्तर और प्रवाह जाँचें, एक्सचेंजर साफ़ करें, पंखा और थर्मोस्टेट सत्यापित करें
-  evidence_metrics: [motor.temp, coolant_temp, flow]
+  evidence_metrics: [motor.temp, coolant_temp, flow, airend.discharge_temp, motor.current]
   parts: [coolant-50l, filter-element]
   est_duration_min: 90
 
@@ -36,9 +36,129 @@ tool_wear:
   symptom: स्पिंडल लोड बढ़ रहा है और सतह फ़िनिश बिगड़ रही है
   likely_cause: कटिंग एज अपनी सीमा से अधिक घिस चुका है
   recommended_action: टूल बदलें और टूल-लाइफ़ काउंटर रीसेट करें
-  evidence_metrics: [load_pct, motor.current, spindle.vib_rms]
+  evidence_metrics: [tool.wear, spindle.load, load_pct, motor.current, spindle.vib_rms]
   parts: [insert-set]
   est_duration_min: 30
+
+ballscrew_wear:
+  symptom: अक्ष का फ़ॉलोइंग एरर बढ़ रहा है और फ़ीड रेट अनियमित है
+  likely_cause: बॉल स्क्रू का प्रीलोड घटा है और नट में बैकलैश है
+  recommended_action: अक्ष पर बैकलैश और गोलाई परीक्षण चलाएँ; बैकलैश सीमा से अधिक हो तो बॉल स्क्रू नट को कसें या बदलें
+  evidence_metrics: [axis.following_error, axis.feed_rate]
+  parts: [ballscrew-nut-assy, wiper-seal]
+  est_duration_min: 240
+
+lubrication_loss:
+  symptom: स्पिंडल का तापमान लोड की तुलना में तेज़ी से बढ़ रहा है
+  likely_cause: ग्रीस खराब हो गया है या स्पिंडल बेयरिंग तक नहीं पहुँच रहा
+  recommended_action: स्नेहन इकाई और लाइनें जाँचें, स्पिंडल में ग्रीस भरें और अगले एक घंटे तापमान देखें
+  evidence_metrics: [spindle.temp, spindle.vib_rms]
+  parts: [grease-nlgi2]
+  est_duration_min: 45
+
+motor_efficiency_loss:
+  symptom: समान काम के लिए करंट और पावर बढ़ रहे हैं
+  likely_cause: मोटर वाइंडिंग इन्सुलेशन की उम्र बढ़ना या रोटर हानि से दक्षता घटी है
+  recommended_action: अगले ठहराव पर इन्सुलेशन प्रतिरोध और फ़ेज़ संतुलन मापें; दक्षता गिरती रहे तो मोटर ओवरहॉल की योजना बनाएँ
+  evidence_metrics: [motor.current, drive.current, power_kw, drive.cycle_energy]
+  parts: [terminal-kit]
+  est_duration_min: 120
+
+filter_clogging:
+  symptom: इनटेक फ़िल्टर का दाब अंतर बढ़ रहा है और डिस्चार्ज गरम है
+  likely_cause: इनटेक फ़िल्टर पर धूल जमा हो गई है
+  recommended_action: इनटेक फ़िल्टर एलिमेंट बदलें और पुष्टि करें कि दाब अंतर सामान्य स्तर पर लौट आया
+  evidence_metrics: [filter.dp, airend.discharge_temp]
+  parts: [intake-filter-element]
+  est_duration_min: 30
+
+valve_leakage:
+  symptom: डिस्चार्ज दाब गिर रहा है जबकि मोटर अधिक मेहनत कर रही है
+  likely_cause: घिसी हुई वाल्व सीटों से संपीड़ित हवा लीक हो रही है
+  recommended_action: इनलेट और डिस्चार्ज वाल्व का लीक परीक्षण करें; सीटों को लैप करें या बदलें
+  evidence_metrics: [airend.discharge_pressure, motor.current, power_kw]
+  parts: [valve-seat-kit]
+  est_duration_min: 150
+
+belt_slip:
+  symptom: बेल्ट की गति ड्राइव गति से कम हो रही है और थ्रूपुट घट रहा है
+  likely_cause: बेल्ट खिंचने और पुली लैगिंग घिसने से फिसलन
+  recommended_action: बेल्ट को फिर से कसें, पुली लैगिंग की जाँच करें और चिकनी हो गई हो तो बदलें
+  evidence_metrics: [belt.speed, motor.current]
+  parts: [belt-lagging-kit]
+  est_duration_min: 90
+
+misalignment:
+  symptom: अक्षीय कंपन प्रमुख है और रेडियल कंपन भी बढ़ रहा है
+  likely_cause: मोटर और गियरबॉक्स कपलिंग का संरेखण बिगड़ा है
+  recommended_action: मोटर और गियरबॉक्स कपलिंग का लेज़र संरेखण करें और कपलिंग इन्सर्ट की घिसावट जाँचें
+  evidence_metrics: [drive.vib_axial, bearing.vib_rms]
+  parts: [coupling-insert]
+  est_duration_min: 120
+
+motor_overheating:
+  symptom: वाइंडिंग तापमान और करंट साथ-साथ बढ़ रहे हैं
+  likely_cause: वाइंडिंग इन्सुलेशन की उम्र बढ़ना या कूलिंग मार्ग अवरुद्ध
+  recommended_action: मोटर का पंखा और फ़िन साफ़ करें, रेटिंग के मुकाबले लोड जाँचें और अगले ठहराव पर वाइंडिंग का मेगर परीक्षण करें
+  evidence_metrics: [motor.temp, motor.current]
+  parts: [terminal-kit]
+  est_duration_min: 90
+
+oil_overheating:
+  symptom: हाइड्रोलिक तेल हर चक्र में अधिक गरम हो रहा है
+  likely_cause: गर्मी से तेज़ हुआ तेल ऑक्सीकरण और गंदा ऑयल कूलर
+  recommended_action: ऑक्सीकरण के लिए तेल का नमूना लें, ऑयल कूलर साफ़ करें और विश्लेषण विफल हो तो तेल बदलें
+  evidence_metrics: [oil.temp]
+  parts: [hydraulic-oil-200l, filter-element]
+  est_duration_min: 180
+
+pump_wear:
+  symptom: दिया गया प्रवाह घट रहा है और तेल अधिक गरम चल रहा है
+  likely_cause: पंप में आंतरिक रिसाव से आयतनिक दक्षता घटी है
+  recommended_action: केस-ड्रेन प्रवाह मापें; रिसाव सीमा से अधिक हो तो पंप कार्ट्रिज की मरम्मत करें या बदलें
+  evidence_metrics: [pump.flow, oil.temp]
+  parts: [pump-cartridge-kit]
+  est_duration_min: 240
+
+seal_leakage:
+  symptom: स्ट्रोक के दौरान सिस्टम दाब बना नहीं रहता
+  likely_cause: घिसी या बाहर निकली सिलेंडर सील से तेल पिस्टन को बायपास कर रहा है
+  recommended_action: सिलेंडर बायपास परीक्षण चलाएँ और पिस्टन सील किट बदलें
+  evidence_metrics: [pump.pressure]
+  parts: [cylinder-seal-kit]
+  est_duration_min: 180
+
+valve_sticking:
+  symptom: वाल्व स्विचिंग समय बढ़ रहा है और स्ट्रोक लंबे हो रहे हैं
+  likely_cause: वार्निश या गंदगी से वाल्व स्पूल धीमा हो गया है
+  recommended_action: दिशात्मक वाल्व को फ़्लश और साफ़ करें, फ़िल्टर एलिमेंट बदलें और तेल की स्वच्छता जाँचें
+  evidence_metrics: [valve.switch_time, pump.pressure]
+  parts: [valve-spool-kit, filter-element]
+  est_duration_min: 90
+
+clamp_wear:
+  symptom: क्लैंप बल कम पड़ रहा है और पुर्ज़ों पर फ़्लैश दिख रहा है
+  likely_cause: टॉगल पिन और बुश में घिसावट
+  recommended_action: टॉगल क्लीयरेंस मापें, घिसे पिन और बुश बदलें और मोल्ड ऊँचाई फिर से सेट करें
+  evidence_metrics: [clamp.force]
+  parts: [toggle-pin-bush-set]
+  est_duration_min: 240
+
+heater_failure:
+  symptom: बैरल ज़ोन का तापमान सेटपॉइंट से नीचे जा रहा है, पहले नोज़ल ज़ोन
+  likely_cause: हीटर बैंड एलिमेंट का आउटपुट घट रहा है
+  recommended_action: हर हीटर बैंड का करंट और प्रतिरोध जाँचें और कमज़ोर बैंड बदलें
+  evidence_metrics: [barrel.zone3_temp, barrel.zone2_temp, power_kw]
+  parts: [heater-band]
+  est_duration_min: 60
+
+screw_wear:
+  symptom: अधिकतम इंजेक्शन दाब घट रहा है और शॉर्ट शॉट आ रहे हैं
+  likely_cause: स्क्रू की घिसी चेक रिंग से पीछे की ओर प्रवाह
+  recommended_action: चेक-रिंग लीक परीक्षण चलाएँ; चेक रिंग बदलें और स्क्रू फ़्लाइट्स की जाँच करें
+  evidence_metrics: [screw.injection_pressure]
+  parts: [check-ring-assy]
+  est_duration_min: 300
 
 normal:
   symptom: कोई असामान्य संकेत नहीं मिला

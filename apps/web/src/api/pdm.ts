@@ -1,5 +1,14 @@
 import { http } from '../lib/axios';
-import type { ModelMetric, Page, PdmModel, Prediction, PredictionLatest } from './types';
+import type {
+  BenchmarkRun,
+  BenchmarkRunRequest,
+  ModelMetric,
+  Page,
+  PdmModel,
+  Prediction,
+  PredictionLatest,
+  TrainJob,
+} from './types';
 
 // ── Models ───────────────────────────────────────────────────────────
 
@@ -32,11 +41,46 @@ export async function trainModel(body: {
   task?: string;
   algorithm?: string;
   asset_type?: string;
+  /** `synthetic:{asset_type}`, `cmapss:FD00x` or `ai4i`; defaults to the asset type's simulator data. */
+  dataset_ref?: string;
   window_size?: number;
   stride?: number;
   horizon?: number;
 }): Promise<{ job_id: string; status: string }> {
   const { data } = await http.post('/models/train', body);
+  return data;
+}
+
+/** The exported ONNX graph, fetched as a blob because the endpoint needs the bearer token. */
+export async function fetchModelOnnx(modelId: string): Promise<Blob> {
+  const { data } = await http.get<Blob>(`/models/${modelId}/onnx`, { responseType: 'blob' });
+  return data;
+}
+
+export async function fetchJob(jobId: string): Promise<TrainJob> {
+  const { data } = await http.get<TrainJob>(`/jobs/${jobId}`);
+  return data;
+}
+
+// ── Benchmarks ───────────────────────────────────────────────────────
+
+export async function fetchBenchmarks(params?: { page?: number; size?: number }): Promise<Page<BenchmarkRun>> {
+  const { data } = await http.get<Page<BenchmarkRun>>('/benchmarks', { params });
+  return data;
+}
+
+export async function fetchBenchmark(id: string): Promise<BenchmarkRun> {
+  const { data } = await http.get<BenchmarkRun>(`/benchmarks/${id}`);
+  return data;
+}
+
+export async function runBenchmark(body: BenchmarkRunRequest): Promise<BenchmarkRun> {
+  const { data } = await http.post<BenchmarkRun>('/benchmarks/run', body);
+  return data;
+}
+
+export async function fetchBenchmarkReport(id: string): Promise<string> {
+  const { data } = await http.get<string>(`/benchmarks/${id}/report.md`, { responseType: 'text' });
   return data;
 }
 

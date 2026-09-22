@@ -217,6 +217,7 @@ class QualityService:
             "metrics": self.repo.for_model(model_id),
             "narration_audit_pass_rate": pass_rate,
             "narration_audit_count": count,
+            "llm_enabled": bool(get_settings().llm_endpoint),
         }
 
     def audits(self, model_id: uuid.UUID | None, passed: bool | None, limit: int) -> list[dict[str, Any]]:
@@ -232,13 +233,17 @@ class QualityService:
             for audit, narration in rows
         ]
 
-    def global_importance(self, model_id: uuid.UUID) -> dict[str, Any]:
-        """Global importance is computed at train time and stored alongside the model's feature set."""
+    def model_or_404(self, model_id: uuid.UUID) -> Any:
         from app.modules.pdm.models import Model
 
         model = self.session.get(Model, model_id)
         if model is None:
             raise NotFoundError(f"Model {model_id} not found")
+        return model
+
+    def global_importance(self, model_id: uuid.UUID) -> dict[str, Any]:
+        """Written by the insights task (after training, hourly, or on demand) into the model's hyperparams."""
+        model = self.model_or_404(model_id)
         stored = (model.hyperparams or {}).get("global_importance") or {}
         features = sorted(
             ({"feature": name, "importance": float(value)} for name, value in stored.items()),

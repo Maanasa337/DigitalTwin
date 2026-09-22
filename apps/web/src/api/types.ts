@@ -55,6 +55,14 @@ export type AssetStatus = (typeof ASSET_STATUSES)[number];
 
 export type FidelityLevel = 1 | 2 | 3 | 4;
 
+/** Floor-plan placement in metres; `rot` is the yaw in radians. */
+export interface AssetPosition {
+  x: number;
+  y: number;
+  z: number;
+  rot: number;
+}
+
 export interface Asset {
   id: string;
   line_id: string;
@@ -71,7 +79,7 @@ export interface Asset {
   ideal_cycle_time_s: number | null;
   rated_power_kw: number | null;
   model_3d_path: string | null;
-  position: { x: number; y: number; z: number; rot: number } | null;
+  position: AssetPosition | null;
   status: AssetStatus;
   attributes: Record<string, unknown>;
   created_at: string;
@@ -198,6 +206,9 @@ export interface TreeAsset {
   status: AssetStatus;
   fidelity_level: FidelityLevel;
   health: number | null;
+  /** Optional: servers before the 3D layout (FR-DT-07) do not send these. */
+  position?: AssetPosition | null;
+  model_3d_path?: string | null;
   components: TreeComponent[];
 }
 
@@ -498,6 +509,46 @@ export interface PredictionLatest {
   prediction: Prediction | null;
 }
 
+export interface TrainJob {
+  job_id: string;
+  status: string;
+  model_id: string | null;
+  /** The worker's exception message once the job has failed. */
+  error?: string | null;
+}
+
+// ── Benchmarks (FR-PM-09) ────────────────────────────────────────────
+
+export const BENCHMARK_DATASETS = ['FD001', 'FD002', 'FD003', 'FD004', 'AI4I', 'METROPT3'] as const;
+export type BenchmarkDataset = (typeof BENCHMARK_DATASETS)[number];
+export type BenchmarkStatus = 'running' | 'done' | 'failed';
+
+/** A PRD §4.5 target: `le` passes when the result is at most `value`, `ge` when at least. */
+export interface BenchmarkTarget {
+  op: 'le' | 'ge';
+  value: number;
+}
+
+export interface BenchmarkRun {
+  id: string;
+  started_at: string;
+  finished_at: string | null;
+  git_sha: string | null;
+  seed: number;
+  datasets: string[];
+  results: Record<string, Record<string, number>> | null;
+  report_uri: string | null;
+  status: BenchmarkStatus;
+  error: string | null;
+  targets: Record<string, Record<string, BenchmarkTarget>>;
+}
+
+export interface BenchmarkRunRequest {
+  datasets: BenchmarkDataset[];
+  seed?: number;
+  quick?: boolean;
+}
+
 // ── Live twin store (WebSocket updates) ──────────────────────────────
 
 export interface LiveMetric {
@@ -665,6 +716,8 @@ export interface XaiQualityMetrics {
   metrics: XaiQualityMetric[];
   narration_audit_pass_rate: number | null;
   narration_audit_count: number;
+  /** Audits exist only for LLM paraphrases; without an LLM every narration is the template itself. */
+  llm_enabled: boolean;
 }
 
 // ── M7: Maintenance ──────────────────────────────────────────────────
@@ -1046,6 +1099,17 @@ export interface ReportSchedule {
   recipients: string[];
   enabled: boolean;
   last_run_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Plant {
+  id: string;
+  code: string;
+  name: string;
+  timezone: string;
+  grid_emission_factor_kg_per_kwh: number;
+  currency: string;
   created_at: string;
   updated_at: string;
 }

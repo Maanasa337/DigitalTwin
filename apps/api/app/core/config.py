@@ -33,6 +33,13 @@ class Settings(BaseSettings):
     # M10 archive root (FR-RP-06). Relative to the working directory, and a compose volume.
     report_archive_dir: str = "data/reports"
 
+    # M5 model bundles, public benchmark data (data/download.py), benchmark reports and simulator
+    # exports. Absolute in the containers (compose volumes); override for a host run.
+    models_dir: str = "/data/models"
+    raw_data_dir: str = "/data/raw"
+    benchmarks_dir: str = "/data/benchmarks"
+    synthetic_dir: str = "/data/synthetic"
+
     allow_t3: bool = False
     command_ack_timeout_s: float = 5.0
 

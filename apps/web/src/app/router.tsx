@@ -22,6 +22,9 @@ const ProductionPage = lazy(() => import('../features/analytics/ProductionPage')
 const EnergyPage = lazy(() => import('../features/analytics/EnergyPage'));
 const VoicePage = lazy(() => import('../features/voice/VoicePage'));
 const ReportsPage = lazy(() => import('../features/reports/ReportsPage'));
+const BenchmarksPage = lazy(() => import('../features/pdm/BenchmarksPage'));
+const PlantLayout3D = lazy(() => import('../features/twin/PlantLayout3D'));
+const GrafanaPage = lazy(() => import('../features/monitoring/GrafanaPage'));
 
 function RequireRole({ roles, children }: { roles: Role[]; children: ReactNode }) {
   const { hasRole } = useAuth();
@@ -54,7 +57,9 @@ export const router = createBrowserRouter(
       children: [
         { index: true, element: <Fleet /> },
         { path: 'machines/:code', element: <MachineDetail /> },
+        { path: 'machines/:code/grafana', element: <GrafanaPage kind="asset" /> },
         { path: 'twin', element: <TwinPage /> },
+        { path: 'twin/3d', element: <PlantLayout3D /> },
         { path: 'explorer', element: <Explorer /> },
         { path: 'alarms', element: <AlarmsPage /> },
         { path: 'maintenance', element: <MaintenancePage /> },
@@ -76,6 +81,22 @@ export const router = createBrowserRouter(
           element: (
             <RequireRole roles={['engineer', 'admin']}>
               <ModelsPage />
+            </RequireRole>
+          ),
+        },
+        {
+          path: 'models/benchmarks',
+          element: (
+            <RequireRole roles={['engineer', 'admin']}>
+              <BenchmarksPage />
+            </RequireRole>
+          ),
+        },
+        {
+          path: 'dashboards',
+          element: (
+            <RequireRole roles={['engineer', 'admin']}>
+              <GrafanaPage kind="fleet" />
             </RequireRole>
           ),
         },

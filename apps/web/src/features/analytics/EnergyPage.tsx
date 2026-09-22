@@ -1,5 +1,5 @@
 import { LineChartOutlined } from '@ant-design/icons';
-import { App, Button, Card, Col, Empty, Flex, Row, Table, Tag, Tooltip, theme } from 'antd';
+import { App, Button, Card, Col, Flex, Row, Table, Tag, Tooltip, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import type { EChartsOption } from 'echarts';
@@ -7,8 +7,10 @@ import ReactECharts from 'echarts-for-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useChartTokens } from '../../app/theme';
 import type { AnalyticsScope, EnergyAnomaly } from '../../api/types';
 import { KpiTile } from '../../components/KpiTile';
+import { EmptyState } from '../../components/EmptyState';
 import { PageHeader } from '../../components/PageHeader';
 import { TimeRangePicker, useTimeRange } from '../../components/TimeRangePicker';
 import {
@@ -24,6 +26,7 @@ import { ScopePicker } from './ScopePicker';
 export default function EnergyPage() {
   const { t } = useTranslation();
   const { token } = theme.useToken();
+  const chart = useChartTokens();
   const { message } = App.useApp();
   const onError = useApiError();
   const { range, setRange } = useTimeRange('24h');
@@ -49,7 +52,7 @@ export default function EnergyPage() {
       {
         onSuccess: (baseline) =>
           void message.success(
-            t('analytics.baselineFitted', 'Baseline refitted (R² {{r2}})', {
+            t('analytics.baselineFitted', {
               r2: baseline.r2?.toFixed(3) ?? 'n/a',
             }),
           ),
@@ -69,11 +72,11 @@ export default function EnergyPage() {
         type: 'value',
         name: 'kWh',
         axisLabel: { color: token.colorTextSecondary },
-        splitLine: { lineStyle: { color: token.colorBorderSecondary } },
+        splitLine: { lineStyle: { color: chart.gridline } },
       },
       series: [
         {
-          name: t('analytics.actualEnergy', 'Actual'),
+          name: t('analytics.actualEnergy'),
           type: 'line',
           smooth: true,
           showSymbol: false,
@@ -81,7 +84,7 @@ export default function EnergyPage() {
           itemStyle: { color: token.colorPrimary },
         },
         {
-          name: t('analytics.expectedEnergy', 'Baseline expectation'),
+          name: t('analytics.expectedEnergy'),
           type: 'line',
           smooth: true,
           showSymbol: false,
@@ -91,7 +94,7 @@ export default function EnergyPage() {
         },
       ],
     };
-  }, [summary, token, t]);
+  }, [summary, token, chart, t]);
 
   const topConsumersOption = useMemo<EChartsOption>(() => {
     const rows = [...(summary?.breakdown ?? [])].reverse();
@@ -101,7 +104,7 @@ export default function EnergyPage() {
       xAxis: {
         type: 'value',
         axisLabel: { color: token.colorTextSecondary },
-        splitLine: { lineStyle: { color: token.colorBorderSecondary } },
+        splitLine: { lineStyle: { color: chart.gridline } },
       },
       yAxis: {
         type: 'category',
@@ -116,33 +119,33 @@ export default function EnergyPage() {
         },
       ],
     };
-  }, [summary, token]);
+  }, [summary, token, chart]);
 
   const anomalyColumns: ColumnsType<EnergyAnomaly> = [
-    { title: t('common.time', 'Time'), dataIndex: 'time', width: 180, render: (v: string) => formatDateTime(v) },
+    { title: t('common.time'), dataIndex: 'time', width: 180, render: (v: string) => formatDateTime(v) },
     {
-      title: t('analytics.actualEnergy', 'Actual'),
+      title: t('analytics.actualEnergy'),
       dataIndex: 'energy_kwh',
       width: 110,
       align: 'right',
       render: (v: number) => `${formatNumber(v, 2)} kWh`,
     },
     {
-      title: t('analytics.expectedEnergy', 'Expected'),
+      title: t('analytics.expectedEnergy'),
       dataIndex: 'expected_kwh',
       width: 110,
       align: 'right',
       render: (v: number) => `${formatNumber(v, 2)} kWh`,
     },
     {
-      title: t('analytics.units', 'Units'),
+      title: t('analytics.units'),
       dataIndex: 'units',
       width: 90,
       align: 'right',
       render: (v: number) => formatNumber(v, 0),
     },
     {
-      title: t('analytics.deviation', 'Deviation'),
+      title: t('analytics.deviation'),
       dataIndex: 'sigma',
       width: 110,
       align: 'right',
@@ -153,7 +156,7 @@ export default function EnergyPage() {
       ),
     },
     {
-      title: t('analytics.health', 'Health'),
+      title: t('analytics.health'),
       dataIndex: 'health_index',
       width: 100,
       align: 'right',
@@ -161,7 +164,7 @@ export default function EnergyPage() {
         v == null ? (
           '—'
         ) : (
-          <Tooltip title={t('analytics.healthHint', 'Asset health at the time of the anomaly')}>
+          <Tooltip title={t('analytics.healthHint')}>
             <span>{v.toFixed(0)}</span>
           </Tooltip>
         ),
@@ -169,13 +172,10 @@ export default function EnergyPage() {
   ];
 
   return (
-    <div style={{ padding: 24 }}>
+    <>
       <PageHeader
-        title={t('analytics.energyTitle', 'Energy analytics')}
-        subtitle={t(
-          'analytics.energySubtitle',
-          'Consumption measured against what this output should have cost, not against last week.',
-        )}
+        title={t('analytics.energyTitle')}
+        subtitle={t('analytics.energySubtitle')}
         actions={
           <>
             <ScopePicker
@@ -193,20 +193,20 @@ export default function EnergyPage() {
               disabled={!scopeId}
               onClick={refitBaseline}
             >
-              {t('analytics.refitBaseline', 'Refit baseline')}
+              {t('analytics.refitBaseline')}
             </Button>
           </>
         }
       />
 
       {!scopeId ? (
-        <Empty description={t('analytics.pickScopePrompt', 'Select a plant, line or asset.')} />
+        <EmptyState description={t('analytics.pickScopePrompt')} />
       ) : (
         <Flex vertical gap={16}>
           <Row gutter={[12, 12]}>
             <Col xs={12} md={6}>
               <KpiTile
-                title={t('analytics.energy', 'Energy')}
+                title={t('analytics.energy')}
                 value={summary?.energy_kwh}
                 unit="kWh"
                 digits={1}
@@ -214,7 +214,7 @@ export default function EnergyPage() {
             </Col>
             <Col xs={12} md={6}>
               <KpiTile
-                title={t('analytics.cost', 'Cost')}
+                title={t('analytics.cost')}
                 value={summary?.cost}
                 unit={summary?.currency}
                 digits={0}
@@ -232,7 +232,7 @@ export default function EnergyPage() {
             </Col>
             <Col xs={12} md={6}>
               <KpiTile
-                title={t('analytics.peakDemand', 'Peak demand')}
+                title={t('analytics.peakDemand')}
                 value={summary?.peak_demand_kw}
                 unit="kW"
                 digits={1}
@@ -240,7 +240,7 @@ export default function EnergyPage() {
             </Col>
             <Col xs={12} md={6}>
               <KpiTile
-                title={t('analytics.energyPerUnit', 'Energy per unit')}
+                title={t('analytics.energyPerUnit')}
                 value={summary?.energy_per_unit}
                 unit="kWh/unit"
                 digits={3}
@@ -249,7 +249,7 @@ export default function EnergyPage() {
             </Col>
             <Col xs={12} md={6}>
               <KpiTile
-                title={t('analytics.idleShare', 'Idle energy share')}
+                title={t('analytics.idleShare')}
                 value={summary?.idle_energy_share}
                 unit="%"
                 digits={1}
@@ -260,12 +260,12 @@ export default function EnergyPage() {
 
           <Card
             size="small"
-            title={t('analytics.intensity', 'Consumption vs baseline')}
+            title={t('analytics.intensity')}
             loading={isLoading}
             extra={
               !hasBaseline ? (
                 <Tag color="warning" style={{ marginInlineEnd: 0 }}>
-                  {t('analytics.noBaseline', 'No baseline fitted')}
+                  {t('analytics.noBaseline')}
                 </Tag>
               ) : null
             }
@@ -273,17 +273,17 @@ export default function EnergyPage() {
             {(summary?.intensity_trend ?? []).length > 0 ? (
               <ReactECharts option={intensityOption} style={{ height: 300 }} notMerge />
             ) : (
-              <Empty description={t('analytics.noEnergy', 'No energy readings in this window.')} />
+              <EmptyState description={t('analytics.noEnergy')} />
             )}
           </Card>
 
           <Row gutter={[12, 12]}>
             <Col xs={24} lg={10}>
-              <Card size="small" title={t('analytics.topConsumers', 'Top consumers')}>
+              <Card size="small" title={t('analytics.topConsumers')}>
                 {(summary?.breakdown ?? []).length > 0 ? (
                   <ReactECharts option={topConsumersOption} style={{ height: 240 }} notMerge />
                 ) : (
-                  <Empty description={t('analytics.noEnergy', 'No energy readings in this window.')} />
+                  <EmptyState description={t('analytics.noEnergy')} />
                 )}
               </Card>
             </Col>
@@ -292,7 +292,7 @@ export default function EnergyPage() {
                 size="small"
                 title={
                   <Flex gap={8} align="center">
-                    <span>{t('analytics.anomalies', 'Energy anomalies')}</span>
+                    <span>{t('analytics.anomalies')}</span>
                     {(anomalies?.length ?? 0) > 0 && (
                       <Tag color="error" style={{ marginInlineEnd: 0 }}>
                         {anomalies!.length}
@@ -309,11 +309,8 @@ export default function EnergyPage() {
                   pagination={{ pageSize: 8, showSizeChanger: false }}
                   locale={{
                     emptyText: hasBaseline
-                      ? t('analytics.noAnomalies', 'Consumption is within 3σ of the baseline.')
-                      : t(
-                          'analytics.baselineNeeded',
-                          'Fit a baseline first — anomalies are measured against expected consumption.',
-                        ),
+                      ? t('analytics.noAnomalies')
+                      : t('analytics.baselineNeeded'),
                   }}
                 />
               </Card>
@@ -321,6 +318,6 @@ export default function EnergyPage() {
           </Row>
         </Flex>
       )}
-    </div>
+    </>
   );
 }

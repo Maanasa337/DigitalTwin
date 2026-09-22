@@ -7,7 +7,7 @@ license = "MIT"
 # The Sparkplug stubs are generated for protobuf 6.31 gencode, which every 6.x and 7.x runtime
 # accepts. Pinning to 7 instead made this package unusable alongside ortools (M7), which caps
 # protobuf below 6.34 — regenerate with grpcio-tools if the floor ever has to move.
-dependencies = ["protobuf>=6.31,<8"]
+dependencies = ["protobuf>=6.31,<8", "pydantic>=2.11,<3"]
 
 [dependency-groups]
 dev = ["pytest>=9", "ruff>=0.14"]

@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AnalyticsScope } from '../../api/types';
-import { useAssets, useLines } from '../../hooks/useAssets';
+import { useAssets, useLines, usePlants } from '../../hooks/useAssets';
 
 interface ScopePickerProps {
   scope: AnalyticsScope;
@@ -19,6 +19,7 @@ interface ScopePickerProps {
  */
 export function ScopePicker({ scope, scopeId, onChange }: ScopePickerProps) {
   const { t } = useTranslation();
+  const { data: plants } = usePlants();
   const { data: lines } = useLines();
   const { data: assets } = useAssets({ size: 200 });
 
@@ -27,10 +28,7 @@ export function ScopePicker({ scope, scopeId, onChange }: ScopePickerProps) {
       ? (assets?.items ?? []).map((a) => ({ value: a.id, label: `${a.code} — ${a.name}` }))
       : scope === 'line'
         ? (lines?.items ?? []).map((l) => ({ value: l.id, label: `${l.code} — ${l.name}` }))
-        : [...new Set((lines?.items ?? []).map((l) => l.plant_id))].map((id) => ({
-            value: id,
-            label: t('analytics.plant', 'Plant'),
-          }));
+        : (plants?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} — ${p.name}` }));
 
   // Default to the first option so the page has data on first paint instead of an empty state.
   useEffect(() => {
@@ -43,9 +41,9 @@ export function ScopePicker({ scope, scopeId, onChange }: ScopePickerProps) {
         value={scope}
         onChange={(v) => onChange(v as AnalyticsScope, undefined)}
         options={[
-          { value: 'plant', label: t('analytics.plant', 'Plant') },
-          { value: 'line', label: t('analytics.line', 'Line') },
-          { value: 'asset', label: t('analytics.asset', 'Asset') },
+          { value: 'plant', label: t('analytics.plant') },
+          { value: 'line', label: t('analytics.line') },
+          { value: 'asset', label: t('analytics.asset') },
         ]}
       />
       <Select
@@ -54,7 +52,7 @@ export function ScopePicker({ scope, scopeId, onChange }: ScopePickerProps) {
         optionFilterProp="label"
         value={scopeId}
         onChange={(v) => onChange(scope, v)}
-        placeholder={t('analytics.pickScope', 'Select')}
+        placeholder={t('analytics.pickScope')}
         options={options}
       />
     </Flex>

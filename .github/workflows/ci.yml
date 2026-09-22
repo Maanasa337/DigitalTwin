@@ -35,6 +35,9 @@ jobs:
       - name: pdm
         working-directory: packages/pdm
         run: uv run ruff check . && uv run pytest
+      - name: edge
+        working-directory: apps/edge
+        run: uv run ruff check . && uv run ruff format --check . && uv run pytest
       - name: simulator
         working-directory: apps/simulator
         run: uv run ruff check . && uv run ruff format --check . && uv run pytest

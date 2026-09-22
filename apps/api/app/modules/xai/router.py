@@ -9,7 +9,8 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.db import get_session
-from app.core.security import CurrentUser, get_current_user
+from app.core.errors import ServiceUnavailableError
+from app.core.security import CurrentUser, get_current_user, require_role
 from app.modules.xai.schemas import (
     CounterfactualOut,
     ExplanationOut,
@@ -83,6 +84,23 @@ def global_importance(model_id: uuid.UUID, session: Session = Depends(get_sessio
 @router.get("/models/{model_id}/quality-metrics", response_model=QualityMetricsOut, dependencies=[reader])
 def quality_metrics(model_id: uuid.UUID, session: Session = Depends(get_session)) -> Any:
     return QualityService(session).for_model(model_id)
+
+
+@router.post("/models/{model_id}/quality-metrics/refresh", status_code=status.HTTP_202_ACCEPTED)
+def refresh_quality_metrics(
+    model_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    _user: CurrentUser = Depends(require_role("engineer", "admin")),
+) -> dict[str, str]:
+    """Recompute importance and explanation quality for one model in the worker."""
+    QualityService(session).model_or_404(model_id)
+    try:
+        from app.workers.tasks.insights import compute_model_insights
+
+        compute_model_insights.delay(str(model_id))
+    except Exception as exc:
+        raise ServiceUnavailableError("Task queue unavailable; recompute was not queued") from exc
+    return {"status": "queued"}
 
 
 @router.get("/narration-audits", response_model=list[NarrationAuditRow], dependencies=[reader])

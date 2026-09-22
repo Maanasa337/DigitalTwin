@@ -59,7 +59,7 @@ export function CreateWorkOrderModal({ open, onClose }: CreateWorkOrderModalProp
             form.resetFields();
             onClose();
             void message.success(
-              t('maintenance.created', 'Work order {{number}} created', { number: order.number }),
+              t('maintenance.created', { number: order.number }),
             );
           },
           onError,
@@ -74,8 +74,8 @@ export function CreateWorkOrderModal({ open, onClose }: CreateWorkOrderModalProp
       onCancel={onClose}
       onOk={submit}
       confirmLoading={create.isPending}
-      title={t('maintenance.newOrder', 'New work order')}
-      okText={t('common.create', 'Create')}
+      title={t('maintenance.newOrder')}
+      okText={t('common.create')}
       width={620}
       destroyOnHidden
     >
@@ -87,13 +87,13 @@ export function CreateWorkOrderModal({ open, onClose }: CreateWorkOrderModalProp
       >
         <Form.Item
           name="asset_id"
-          label={t('maintenance.asset', 'Asset')}
-          rules={[{ required: true, message: t('maintenance.assetRequired', 'Pick an asset') }]}
+          label={t('maintenance.asset')}
+          rules={[{ required: true, message: t('maintenance.assetRequired') }]}
         >
           <Select
             showSearch
             optionFilterProp="label"
-            placeholder={t('maintenance.pickAsset', 'Select the machine')}
+            placeholder={t('maintenance.pickAsset')}
             options={(assets?.items ?? []).map((a) => ({
               value: a.id,
               label: `${a.code} — ${a.name}`,
@@ -103,45 +103,45 @@ export function CreateWorkOrderModal({ open, onClose }: CreateWorkOrderModalProp
 
         <Form.Item
           name="title"
-          label={t('maintenance.titleField', 'Title')}
+          label={t('maintenance.titleField')}
           rules={[{ required: true, max: 200 }]}
         >
           <Input placeholder="Replace spindle bearing" />
         </Form.Item>
 
         <Flex gap={12}>
-          <Form.Item name="type" label={t('maintenance.type', 'Type')} style={{ flex: 1 }}>
+          <Form.Item name="type" label={t('maintenance.type')} style={{ flex: 1 }}>
             <Select
               options={[
-                { value: 'corrective', label: t('maintenance.corrective', 'Corrective') },
-                { value: 'preventive', label: t('maintenance.preventive', 'Preventive') },
-                { value: 'predictive', label: t('maintenance.predictive', 'Predictive') },
+                { value: 'corrective', label: t('maintenance.corrective') },
+                { value: 'preventive', label: t('maintenance.preventive') },
+                { value: 'predictive', label: t('maintenance.predictive') },
               ]}
             />
           </Form.Item>
           <Form.Item
             name="priority"
-            label={t('maintenance.priority', 'Priority')}
+            label={t('maintenance.priority')}
             style={{ flex: 1 }}
-            extra={t('maintenance.priorityHint', '1 is most urgent')}
+            extra={t('maintenance.priorityHint')}
           >
             <InputNumber min={1} max={5} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item
             name="est_duration_min"
-            label={t('maintenance.duration', 'Est. duration')}
+            label={t('maintenance.duration')}
             style={{ flex: 1 }}
           >
             <InputNumber min={1} max={10080} addonAfter="min" style={{ width: '100%' }} />
           </Form.Item>
         </Flex>
 
-        <Form.Item name="technician_id" label={t('maintenance.technician', 'Technician')}>
+        <Form.Item name="technician_id" label={t('maintenance.technician')}>
           <Select
             allowClear
             showSearch
             optionFilterProp="label"
-            placeholder={t('maintenance.unassigned', 'Leave unassigned for the optimiser')}
+            placeholder={t('maintenance.unassigned')}
             options={(technicians?.items ?? []).map((tech) => ({
               value: tech.id,
               label: `${tech.name} (${tech.skills.join(', ') || 'no skills listed'})`,
@@ -149,11 +149,11 @@ export function CreateWorkOrderModal({ open, onClose }: CreateWorkOrderModalProp
           />
         </Form.Item>
 
-        <Form.Item name="planned" label={t('maintenance.plannedWindow', 'Planned window')}>
+        <Form.Item name="planned" label={t('maintenance.plannedWindow')}>
           <DatePicker.RangePicker showTime style={{ width: '100%' }} />
         </Form.Item>
 
-        <Form.Item name="description" label={t('maintenance.description', 'Description')}>
+        <Form.Item name="description" label={t('maintenance.description')}>
           <Input.TextArea rows={2} maxLength={4000} />
         </Form.Item>
 
@@ -174,7 +174,7 @@ export function CreateWorkOrderModal({ open, onClose }: CreateWorkOrderModalProp
                 </Flex>
               ))}
               <Button type="dashed" onClick={() => add()} icon={<PlusOutlined />} block>
-                {t('maintenance.addTask', 'Add task step')}
+                {t('maintenance.addTask')}
               </Button>
             </Flex>
           )}

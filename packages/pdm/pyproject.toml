@@ -15,10 +15,20 @@ dependencies = [
     "numba>=0.61,<1",
 ]
 
+[project.optional-dependencies]
+# ONNX export at train time and ONNX Runtime inference on the edge (FR-EDGE-01).
+onnx = [
+    "onnx>=1.17,<2",
+    "onnxmltools>=1.13,<2",
+    "onnxruntime>=1.20,<2",
+]
+
 [dependency-groups]
 dev = [
     "pytest>=9,<10",
     "ruff>=0.16,<0.17",
+    # The parity tests need the extra; listing it here keeps `uv run pytest` self-contained.
+    "twinvoice-pdm[onnx]",
 ]
 
 [build-system]

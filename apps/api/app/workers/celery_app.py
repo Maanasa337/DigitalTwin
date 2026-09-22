@@ -31,6 +31,8 @@ celery_app.conf.update(
         "app.workers.tasks.maintenance",
         "app.workers.tasks.rollup",
         "app.workers.tasks.report",
+        "app.workers.tasks.benchmark",
+        "app.workers.tasks.insights",
     ],
 )
 
@@ -38,6 +40,12 @@ celery_app.conf.beat_schedule = {
     "infer-all-assets": {
         "task": "app.workers.tasks.infer.infer_all_assets",
         "schedule": 30.0,  # seconds
+    },
+    # M6: importance and explanation quality of the production models; window stability moves as
+    # live explanations accumulate.
+    "refresh-model-insights": {
+        "task": "app.workers.tasks.insights.refresh_production_insights",
+        "schedule": 3600.0,
     },
     # M7: auto work orders follow inference, so they run a little less often than it.
     "raise-predictive-orders": {

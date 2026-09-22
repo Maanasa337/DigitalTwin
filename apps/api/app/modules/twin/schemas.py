@@ -20,6 +20,13 @@ class TreeComponent(BaseModel):
     rul: RulOut | None
 
 
+class TreePosition(BaseModel):
+    x: float
+    y: float
+    z: float = 0
+    rot: float = 0
+
+
 class TreeAsset(BaseModel):
     id: uuid.UUID
     code: str
@@ -29,6 +36,9 @@ class TreeAsset(BaseModel):
     fidelity_level: int
     health: float | None
     components: list[TreeComponent]
+    # Plant-floor placement for the 3D layout (FR-DT-07); null lets the UI fall back to a grid.
+    position: TreePosition | None = None
+    model_3d_path: str | None = None
 
 
 class TreeLine(BaseModel):

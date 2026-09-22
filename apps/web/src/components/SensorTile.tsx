@@ -1,8 +1,10 @@
 import { Badge, theme } from 'antd';
 import type { CSSProperties } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { TelemetryLatestValue } from '../api/types';
 import { formatNumber } from '../lib/format';
+import { STATUS_PALETTE } from '../lib/status';
 
 interface SensorTileProps {
   sensor: TelemetryLatestValue;
@@ -19,8 +21,10 @@ const QUALITY_GOOD = 192;
  * Compact sensor tile: name, value+unit, 10-min sparkline, quality dot.
  */
 export function SensorTile({ sensor, sparkline, warnHigh, alarmHigh }: SensorTileProps) {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const isGood = sensor.quality >= QUALITY_GOOD;
+  const qualityLabel = t(isGood ? 'sensor.qualityGood' : 'sensor.qualityBad');
 
   const containerStyle: CSSProperties = {
     background: token.colorBgContainer,
@@ -61,6 +65,8 @@ export function SensorTile({ sensor, sparkline, warnHigh, alarmHigh }: SensorTil
       {/* Quality indicator */}
       <Badge
         status={isGood ? 'success' : 'error'}
+        title={qualityLabel}
+        aria-label={qualityLabel}
         style={{ position: 'absolute', top: 8, right: 8 }}
       />
 
@@ -69,7 +75,7 @@ export function SensorTile({ sensor, sparkline, warnHigh, alarmHigh }: SensorTil
       </div>
 
       <div>
-        <span style={valueStyle}>
+        <span style={valueStyle} className="tabular">
           {sensor.value != null ? formatNumber(sensor.value, sensor.unit === '°C' ? 1 : 2) : '—'}
         </span>
         <span style={unitStyle}>{sensor.unit}</span>
@@ -123,11 +129,11 @@ function MiniSparkline({
     <svg width={width} height={height} style={{ display: 'block' }}>
       {/* Warn threshold line */}
       {warnHigh != null && warnHigh >= min && warnHigh <= max && (
-        <line x1={0} y1={thresholdY(warnHigh)} x2={width} y2={thresholdY(warnHigh)} stroke="#fab219" strokeWidth={1} strokeDasharray="3,3" opacity={0.6} />
+        <line x1={0} y1={thresholdY(warnHigh)} x2={width} y2={thresholdY(warnHigh)} stroke={STATUS_PALETTE.warning.color} strokeWidth={1} strokeDasharray="3,3" opacity={0.6} />
       )}
       {/* Alarm threshold line */}
       {alarmHigh != null && alarmHigh >= min && alarmHigh <= max && (
-        <line x1={0} y1={thresholdY(alarmHigh)} x2={width} y2={thresholdY(alarmHigh)} stroke="#d03b3b" strokeWidth={1} strokeDasharray="3,3" opacity={0.6} />
+        <line x1={0} y1={thresholdY(alarmHigh)} x2={width} y2={thresholdY(alarmHigh)} stroke={STATUS_PALETTE.critical.color} strokeWidth={1} strokeDasharray="3,3" opacity={0.6} />
       )}
       <polyline fill="none" stroke={color} strokeWidth={1.5} points={points} />
     </svg>

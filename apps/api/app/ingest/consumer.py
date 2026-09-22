@@ -37,6 +37,8 @@ log = logging.getLogger(__name__)
 BATCH_SIZE = 500
 FLUSH_INTERVAL_S = 0.25
 SPARKPLUG_TOPIC = "spBv1.0/#"
+# Predictions published by edge runners (M11), already inferred and explained on the device.
+EDGE_PREDICTION_TOPIC = "twinvoice/pred/+"
 
 # Metrics the simulator publishes per asset rather than per sensor. `state`, the two counters and
 # `cycle_time_s` have no sensor row at all; `power_kw` and `power_factor` do, and are read twice —
@@ -219,14 +221,57 @@ class IngestConsumer:
             self._ditto.close()
 
     def _on_connect(self, client: mqtt.Client, _userdata: Any, _flags: Any, rc: Any, _props: Any = None) -> None:
-        log.info("MQTT connected, subscribing to %s", SPARKPLUG_TOPIC)
-        client.subscribe(SPARKPLUG_TOPIC, qos=1)
+        log.info("MQTT connected, subscribing to %s and %s", SPARKPLUG_TOPIC, EDGE_PREDICTION_TOPIC)
+        client.subscribe([(SPARKPLUG_TOPIC, 1), (EDGE_PREDICTION_TOPIC, 1)])
 
     def _on_message(self, _client: mqtt.Client, _userdata: Any, msg: mqtt.MQTTMessage) -> None:
         try:
-            self._process_message(msg.topic, msg.payload)
+            if msg.topic.startswith("twinvoice/pred/"):
+                self._process_edge_prediction(msg.topic, msg.payload)
+            else:
+                self._process_message(msg.topic, msg.payload)
         except Exception:
             log.exception("error processing message on %s", msg.topic)
+
+    def _process_edge_prediction(self, topic: str, payload: bytes) -> None:
+        """Validate, store (prediction + explanation), patch Ditto and fan out, like infer.py does."""
+        from pydantic import ValidationError
+        from twinvoice_contracts.prediction import EdgePrediction, asset_from_pred_topic
+
+        from app.ingest.edge_predictions import store_edge_prediction
+
+        topic_asset = asset_from_pred_topic(topic)
+        try:
+            message = EdgePrediction.model_validate_json(payload)
+        except ValidationError as exc:
+            log.warning("invalid edge prediction on %s: %s", topic, exc.errors()[:3])
+            return
+        if message.asset_code != topic_asset:
+            log.warning("edge prediction for %s arrived on %s; dropped", message.asset_code, topic)
+            return
+        asset_id = self._asset_map.get(message.asset_code)
+        if asset_id is None:
+            log.warning("edge prediction for unknown asset %s", message.asset_code)
+            return
+
+        with self._session_factory() as session:
+            stored = store_edge_prediction(session, message, asset_id)
+        if stored is None:
+            return
+
+        try:
+            self._ditto.merge_thing(
+                f"twinvoice:{stored.asset_code}",
+                {"features": {"prediction": {"properties": stored.ditto_properties}}},
+            )
+        except Exception:
+            log.debug("ditto patch failed for edge prediction on %s", stored.asset_code)
+        try:
+            self._valkey.publish(
+                f"live:{stored.asset_code}", json.dumps({"kind": "prediction", "payload": stored.live_payload})
+            )
+        except Exception:
+            log.debug("valkey publish failed for edge prediction on %s", stored.asset_code)
 
     def _process_message(self, topic: str, payload: bytes) -> None:
         from twinvoice_contracts.sparkplug import decode_payload, parse_topic

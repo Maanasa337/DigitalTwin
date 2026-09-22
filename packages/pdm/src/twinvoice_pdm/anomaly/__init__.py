@@ -6,6 +6,17 @@ import numpy as np
 from sklearn.ensemble import IsolationForest
 
 
+def normalise_anomaly(raw: np.ndarray, baseline_q95: float) -> np.ndarray:
+    """Map IsolationForest ``-score_samples`` (0..1] to an anomaly score in [0, 1].
+
+    Anything inside the healthy baseline's 95th percentile scores 0; the score then rises
+    linearly to 1 at the IsolationForest maximum. Dividing by q95 instead would put healthy
+    points at 0.8-1.0 and read a healthy machine as health ~0.
+    """
+    span = max(1.0 - baseline_q95, 1e-6)
+    return np.clip((np.asarray(raw, dtype=np.float64) - baseline_q95) / span, 0.0, 1.0)
+
+
 class AnomalyDetector:
     """IsolationForest wrapper fitted on healthy baseline data.
 
@@ -37,9 +48,7 @@ class AnomalyDetector:
 
     def score(self, X: np.ndarray) -> np.ndarray:
         """Normalised anomaly score in [0, 1]."""
-        raw = -self.model.score_samples(X)
-        normalised = raw / self._baseline_q95
-        return np.clip(normalised, 0.0, 1.0)
+        return normalise_anomaly(-self.model.score_samples(X), self._baseline_q95)
 
     def health_index(self, X: np.ndarray) -> np.ndarray:
         """Health index in [0, 100] — higher is healthier."""

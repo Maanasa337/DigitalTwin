@@ -71,7 +71,7 @@ def _explain(session: Any, prediction_id: uuid.UUID) -> None:
     result = _attribute(artifact, np.asarray(values), feature_names)
     ebm_result = _ebm_second_opinion(model, np.asarray(values), feature_names)
 
-    failure_mode = _predicted_mode(prediction)
+    failure_mode = _predicted_mode(session, prediction, result.attributions)
     card = build_reason_card(
         failure_mode,
         result.attributions,
@@ -108,29 +108,22 @@ def _explain(session: Any, prediction_id: uuid.UUID) -> None:
 
 
 def _feature_vector(session: Any, prediction: Any, model: Any) -> tuple[list[str], list[float]]:
-    """Rebuild the exact window the model scored, from telemetry_1m between window_start and window_end."""
-    from sqlalchemy import text
+    """Rebuild exactly the vector the inference job scored for this prediction.
 
-    feature_set = model.feature_set
-    names = list(feature_set) if isinstance(feature_set, list) else list(feature_set.get("features") or [])
-    if not names:
+    Server predictions store the bucket-aligned window they scored, so `scoring.telemetry_window`
+    over the same span yields the same buckets and `scoring.feature_vector` the same features,
+    imputations included. A model registered before bundles existed has nothing to rebuild from.
+    """
+    from app.modules.pdm import scoring
+
+    loaded = scoring.load(model)
+    if loaded is None:
         return [], []
-
-    rows = session.execute(
-        text(
-            """
-            SELECT s.metric_name, avg(t.avg) AS value
-            FROM telemetry_1m t
-            JOIN sensors s ON s.id = t.sensor_id
-            WHERE s.asset_id = :asset_id AND t.bucket >= :start AND t.bucket < :end
-            GROUP BY s.metric_name
-            """
-        ),
-        {"asset_id": prediction.asset_id, "start": prediction.window_start, "end": prediction.window_end},
-    ).all()
-    by_metric = {metric: float(value) for metric, value in rows if value is not None}
-    # Features the window has no reading for are zero-filled, matching how the trainer handled gaps.
-    return names, [by_metric.get(name.split("_")[0], by_metric.get(name, 0.0)) for name in names]
+    window = scoring.telemetry_window(session, prediction.asset_id, loaded.spec, prediction.window_end)
+    if window is None:
+        return [], []
+    values, _ = scoring.feature_vector(loaded, window)
+    return loaded.feature_names, [float(v) for v in values]
 
 
 def _load_artifact(artifact_uri: str) -> Any | None:
@@ -189,10 +182,13 @@ def _ebm_second_opinion(model: Any, values: Any, feature_names: list[str]) -> An
         return None
 
 
-def _predicted_mode(prediction: Any) -> str:
+def _predicted_mode(session: Any, prediction: Any, attributions: list[Any]) -> str:
+    """The classifier's most probable mode; for a RUL-only model, the mode the evidence supports."""
+    from app.modules.xai.modes import signature_mode
+
     probabilities = prediction.failure_probability_calibrated or prediction.failure_probability or {}
     if not probabilities:
-        return "normal"
+        return signature_mode(session, prediction.asset_id, attributions, prediction.health_index)
     return max(probabilities, key=lambda mode: probabilities[mode])
 
 

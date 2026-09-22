@@ -122,6 +122,8 @@ services:
       - "127.0.0.1:8081:8080"
     volumes:
       - ./infra/keycloak/realm.json:/opt/keycloak/data/import/realm.json:ro
+      # start-dev disables the theme cache, so edits under themes/ show on the next page load.
+      - ./infra/keycloak/themes/twinvoice:/opt/keycloak/themes/twinvoice:ro
     healthcheck:
       test:
         - CMD-SHELL
@@ -148,9 +150,14 @@ services:
       TV_KEYCLOAK_INTERNAL_URL: http://keycloak:8080
       TV_SIMULATOR_URL: http://simulator:8090
       TV_ALLOW_T3: ${TV_ALLOW_T3:-false}
+      # Password Alembic 0010 gives the grafana_ro role; Grafana's datasource reads the same variable.
+      TV_GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD:-grafana_ro}
       TV_LLM_ENDPOINT: ${TV_LLM_ENDPOINT:-}
     volumes:
       - ./data/reports:/app/apps/api/data/reports
+      - ./data/models:/data/models
+      - ./data/raw:/data/raw:ro
+      - ./data/benchmarks:/data/benchmarks
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
@@ -188,6 +195,51 @@ services:
       - "127.0.0.1:8088:80"
     depends_on:
       - api
+
+  # Optional engineer dashboards (anonymous Viewer), served under /grafana/ and proxied by web.
+  # Needs the grafana_ro role from Alembic 0010, which the api applies on start.
+  grafana:
+    image: grafana/grafana-oss:${GRAFANA_VERSION:-13.0.2}
+    restart: unless-stopped
+    environment:
+      # Absolute URL used for redirects and links; the UI itself uses only the /grafana/ path, so
+      # direct access on :3000 keeps working. Change it if the web port is not 8088.
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:8088/grafana/}
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_SECURITY_DISABLE_GRAVATAR: "true"
+      GF_USERS_DEFAULT_THEME: dark
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # Grafana Live checks the websocket Origin against root_url; also allow Vite dev and direct :3000.
+      GF_LIVE_ALLOWED_ORIGINS: http://localhost:5173, http://localhost:3000
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/json/fleet-overview.json
+      # No outbound calls: telemetry, update checks, news feed, plugin pre-installs.
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_ANALYTICS_FEEDBACK_LINKS_ENABLED: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+      GF_PLUGINS_PUBLIC_KEY_RETRIEVAL_DISABLED: "true"
+      GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD:-grafana_ro}
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/grafana/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   ingest:
     build:
@@ -249,13 +301,39 @@ services:
       TV_LLM_ENDPOINT: ${TV_LLM_ENDPOINT:-}
     volumes:
       - ./data/reports:/app/apps/api/data/reports
+      - ./data/models:/data/models
+      - ./data/raw:/data/raw:ro
+      - ./data/benchmarks:/data/benchmarks
+      # Simulator exports (written by the simulator service) for `make train`.
+      - ./data/synthetic:/data/synthetic:ro
     depends_on:
       postgres:
         condition: service_healthy
       valkey:
         condition: service_healthy
 
+  # M11 edge runner: ONNX inference + TreeSHAP next to the machines, publishing twinvoice/pred/{asset}.
+  # Opt-in: `docker compose --profile edge up -d edge` (or `make edge`) after `make train`.
+  edge:
+    profiles: ["edge"]
+    build:
+      context: .
+      dockerfile: apps/edge/Dockerfile
+    restart: unless-stopped
+    environment:
+      EDGE_MQTT_HOST: mosquitto
+      EDGE_ASSETS: ${EDGE_ASSETS:-cnc-01,compressor-01,conveyor-01,press-01,moulder-01}
+      EDGE_MODEL_DIR: /models
+      EDGE_BUFFER_PATH: /edge/buffer.sqlite
+      EDGE_LOG_PATH: /edge/latency.csv
+    volumes:
+      - ./data/models:/models:ro
+      - ./data/edge:/edge
+    depends_on:
+      - mosquitto
+
 volumes:
   pgdata:
   mosquitto-data:
   mongo-data:
+  grafana-data:

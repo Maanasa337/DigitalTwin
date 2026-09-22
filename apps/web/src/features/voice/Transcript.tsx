@@ -1,7 +1,8 @@
-import { Button, Empty, Flex, Space, Tag, Typography, theme } from 'antd';
+import { Button, Flex, Space, Tag, Typography, theme } from 'antd';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { EmptyState } from '../../components/EmptyState';
 import type { Exchange } from '../../store/voiceStore';
 import { TierBadge } from './TierBadge';
 
@@ -20,7 +21,7 @@ export function Transcript({ exchanges, onSuggestion }: TranscriptProps) {
   }, [exchanges.length]);
 
   if (exchanges.length === 0) {
-    return <Empty description={t('voice.emptyTranscript')} image={Empty.PRESENTED_IMAGE_SIMPLE} />;
+    return <EmptyState description={t('voice.emptyTranscript')} />;
   }
 
   return (

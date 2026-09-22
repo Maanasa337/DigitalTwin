@@ -1,6 +1,6 @@
 import { theme, type ThemeConfig } from 'antd';
 
-import type { ThemeMode } from '../store/uiStore';
+import { useUiStore, type ThemeMode } from '../store/uiStore';
 
 export const FONT_FAMILY = 'Inter, system-ui, "Segoe UI", sans-serif';
 
@@ -35,6 +35,32 @@ export const TOKENS = {
   },
 } as const;
 
+/**
+ * Chart-only tokens (§9.2) that have no Ant Design equivalent. Kept apart from `TOKENS` because
+ * that object is spread into `theme.token`, which only accepts Ant Design's own keys.
+ */
+/**
+ * `series` is the categorical order (blue, orange, aqua, yellow, magenta, green, violet, red), stepped
+ * per surface and validated for colour-vision deficiency. Assign it by entity, never by rank, and
+ * never cycle it: a ninth series is a sign the chart needs splitting.
+ */
+export const CHART_TOKENS = {
+  dark: {
+    gridline: '#2c2c2a',
+    axis: '#898781',
+    series: ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9', '#e66767'],
+  },
+  light: {
+    gridline: '#e1e0d9',
+    axis: '#898781',
+    series: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948'],
+  },
+} as const;
+
+export function useChartTokens() {
+  return CHART_TOKENS[useUiStore((s) => s.themeMode)];
+}
+
 export function themeConfig(mode: ThemeMode): ThemeConfig {
   const tokens = TOKENS[mode];
   return {
@@ -57,7 +83,10 @@ export function themeConfig(mode: ThemeMode): ThemeConfig {
         headerHeight: 56,
         headerPadding: '0 16px',
       },
-      Menu: { itemBg: 'transparent' },
+      Menu: { itemBg: 'transparent', itemBorderRadius: 8, subMenuItemBorderRadius: 8 },
+      // §9.4: card radius 12, control radius 8, tag radius 999 (a pill).
+      Card: { borderRadiusLG: 12 },
+      Tag: { borderRadiusSM: 999 },
     },
   };
 }

@@ -1,7 +1,10 @@
 import { LogoutOutlined, MenuOutlined, MoonOutlined, SunOutlined, UserOutlined } from '@ant-design/icons';
 import { Button, Dropdown, Flex, Segmented, Tag, Tooltip, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 
+import { BrandMark } from '../components/BrandMark';
+import { useChangeLanguage } from '../hooks/useLanguage';
 import { useMe } from '../hooks/useMe';
 import { useNow } from '../hooks/useNow';
 import { STATUS_PALETTE, type StatusLevel } from '../lib/status';
@@ -75,13 +78,9 @@ function UserMenu({ compact }: { compact: boolean }) {
 }
 
 export function TopBar({ showNavToggle, compact }: { showNavToggle: boolean; compact: boolean }) {
-  const { t, i18n } = useTranslation();
-  const { themeMode, toggleTheme, toggleNav, setLanguage, language } = useUiStore();
-
-  const changeLanguage = (value: Language) => {
-    setLanguage(value);
-    void i18n.changeLanguage(value);
-  };
+  const { t } = useTranslation();
+  const { themeMode, toggleTheme, toggleNav, language } = useUiStore();
+  const changeLanguage = useChangeLanguage();
 
   return (
     <Flex align="center" justify="space-between" gap={8} style={{ height: '100%' }}>
@@ -89,9 +88,9 @@ export function TopBar({ showNavToggle, compact }: { showNavToggle: boolean; com
         {showNavToggle && (
           <Button type="text" icon={<MenuOutlined />} onClick={toggleNav} aria-label={t('topbar.toggleNav')} />
         )}
-        <Typography.Text strong style={{ fontSize: 16 }}>
-          TwinVoice
-        </Typography.Text>
+        <Link to="/" aria-label={t('topbar.home')} style={{ color: 'inherit', display: 'inline-flex' }}>
+          <BrandMark />
+        </Link>
       </Flex>
       <Flex align="center" gap={compact ? 4 : 12}>
         <WsIndicator compact={compact} />

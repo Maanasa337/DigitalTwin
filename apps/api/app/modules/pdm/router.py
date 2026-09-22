@@ -6,13 +6,17 @@ import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import FileResponse, PlainTextResponse
 from sqlalchemy.orm import Session
 
 from app.common.pagination import PageParams
 from app.common.schemas import Page
 from app.core.db import get_session
+from app.core.errors import ServiceUnavailableError
 from app.core.security import CurrentUser, get_current_user, require_role
 from app.modules.pdm.schemas import (
+    BenchmarkOut,
+    BenchmarkRunRequest,
     JobOut,
     ModelMetricOut,
     ModelOut,
@@ -20,7 +24,7 @@ from app.modules.pdm.schemas import (
     PredictionOut,
     TrainRequest,
 )
-from app.modules.pdm.service import ModelService, PredictionService
+from app.modules.pdm.service import BenchmarkService, JobService, ModelService, PredictionService
 
 router = APIRouter(tags=["pdm"])
 
@@ -61,6 +65,21 @@ def get_model_metrics(
     return [ModelMetricOut.model_validate(m) for m in metrics]
 
 
+@router.get(
+    "/models/{model_id}/onnx",
+    response_class=FileResponse,
+    responses={200: {"content": {"application/octet-stream": {}}}},
+)
+def download_onnx(
+    model_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    _user: CurrentUser = Depends(get_current_user),
+) -> FileResponse:
+    """The exported ONNX graph (FR-EDGE-01), for deploying the model to an edge runner."""
+    model, path = ModelService(session).onnx_file(model_id)
+    return FileResponse(path, media_type="application/octet-stream", filename=f"{model.name}-{model.version}.onnx")
+
+
 @router.post("/models/{model_id}/promote", response_model=ModelOut)
 def promote_model(
     model_id: uuid.UUID,
@@ -93,12 +112,64 @@ def train_model(
             horizon=body.horizon,
             hyperparams=body.hyperparams,
         )
-        return JobOut(job_id=result.id, status="queued")
-    except Exception:
-        # Celery not available — return a placeholder
-        import uuid as _uuid
+    except Exception as exc:
+        # A made-up job id would leave the caller polling a job that never runs.
+        raise ServiceUnavailableError("Task queue unavailable; training was not queued") from exc
+    return JobOut(job_id=result.id, status="queued")
 
-        return JobOut(job_id=str(_uuid.uuid4()), status="queued_local")
+
+@router.get("/jobs/{job_id}", response_model=JobOut)
+def get_job(job_id: str, _user: CurrentUser = Depends(get_current_user)) -> JobOut:
+    return JobService().status(job_id)
+
+
+# ── Benchmarks ────────────────────────────────────────────────────────
+
+
+def _benchmark_out(run: object) -> BenchmarkOut:
+    from twinvoice_pdm.benchmark import TARGETS
+
+    return BenchmarkOut.from_run(run, TARGETS)
+
+
+@router.get("/benchmarks", response_model=Page[BenchmarkOut])
+def list_benchmarks(
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=200),
+    session: Session = Depends(get_session),
+    _user: CurrentUser = Depends(get_current_user),
+) -> dict:
+    runs, total = BenchmarkService(session).list_runs(PageParams(page=page, size=size))
+    return {"items": [_benchmark_out(r) for r in runs], "total": total, "page": page, "size": size}
+
+
+@router.post("/benchmarks/run", response_model=BenchmarkOut, status_code=202)
+def run_benchmark(
+    body: BenchmarkRunRequest,
+    session: Session = Depends(get_session),
+    user: CurrentUser = Depends(require_role("engineer", "admin")),
+) -> BenchmarkOut:
+    """Queue a benchmark run (FR-PM-09); poll `GET /benchmarks/{id}` until it is done or failed."""
+    return _benchmark_out(BenchmarkService(session).start(user, body))
+
+
+@router.get("/benchmarks/{run_id}", response_model=BenchmarkOut)
+def get_benchmark(
+    run_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    _user: CurrentUser = Depends(get_current_user),
+) -> BenchmarkOut:
+    return _benchmark_out(BenchmarkService(session).get_or_404(run_id))
+
+
+@router.get("/benchmarks/{run_id}/report.md", response_class=PlainTextResponse)
+def get_benchmark_report(
+    run_id: uuid.UUID,
+    session: Session = Depends(get_session),
+    _user: CurrentUser = Depends(get_current_user),
+) -> PlainTextResponse:
+    text = BenchmarkService(session).report_markdown(run_id)
+    return PlainTextResponse(text, media_type="text/markdown; charset=utf-8")
 
 
 # ── Predictions ───────────────────────────────────────────────────────

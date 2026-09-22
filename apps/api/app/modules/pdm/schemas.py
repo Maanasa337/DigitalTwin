@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -68,6 +68,8 @@ class JobOut(BaseModel):
     job_id: str
     status: str
     model_id: uuid.UUID | None = None
+    # The worker's exception message when the job failed, so the UI can say why.
+    error: str | None = None
 
 
 # ── Prediction ────────────────────────────────────────────────────────
@@ -143,13 +145,50 @@ class PredictionLatest(BaseModel):
 # ── Benchmark ─────────────────────────────────────────────────────────
 
 
+BENCHMARK_DATASETS = ("FD001", "FD002", "FD003", "FD004", "AI4I", "METROPT3")
+BenchmarkDataset = Literal["FD001", "FD002", "FD003", "FD004", "AI4I", "METROPT3"]
+
+
+class BenchmarkTarget(BaseModel):
+    op: Literal["le", "ge"]
+    value: float
+
+
+class BenchmarkRunRequest(BaseModel):
+    datasets: list[BenchmarkDataset] = Field(min_length=1)
+    seed: int = Field(42, ge=0)
+    quick: bool = False
+
+
 class BenchmarkOut(BaseModel):
     id: uuid.UUID
     started_at: datetime
     finished_at: datetime | None
+    git_sha: str | None
     seed: int
     datasets: list[str]
-    results: dict[str, Any] | None
-    status: str
+    results: dict[str, dict[str, float]] | None
+    report_uri: str | None
+    status: Literal["running", "done", "failed"]
+    # No column of its own: a failed run keeps its message under results["_error"], which is lifted
+    # out here so `results` stays the {dataset: {metric: value}} shape the report template reads.
+    error: str | None = None
+    targets: dict[str, dict[str, BenchmarkTarget]] = Field(default_factory=dict)
 
-    model_config = {"from_attributes": True}
+    @classmethod
+    def from_run(cls, run: Any, targets: dict[str, dict[str, dict[str, Any]]]) -> BenchmarkOut:
+        raw = dict(run.results or {})
+        error = raw.pop("_error", None)
+        return cls(
+            id=run.id,
+            started_at=run.started_at,
+            finished_at=run.finished_at,
+            git_sha=run.git_sha,
+            seed=run.seed,
+            datasets=list(run.datasets or []),
+            results=raw or None,
+            report_uri=run.report_uri,
+            status=run.status,
+            error=error.get("message") if isinstance(error, dict) else None,
+            targets={d: {m: BenchmarkTarget(**t) for m, t in metrics.items()} for d, metrics in targets.items()},
+        )

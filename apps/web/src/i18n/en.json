@@ -11,18 +11,25 @@
     "retry": "Retry",
     "save": "Save",
     "delete": "Delete",
-    "noData": "No data"
+    "noData": "No data",
+    "all": "All",
+    "back": "Back",
+    "loading": "Loading",
+    "status": "Status",
+    "time": "Time"
   },
   "auth": {
     "signingIn": "Signing in…",
-    "failed": "Sign-in failed. Check that the identity server is reachable."
+    "failed": "Sign-in failed. Check that the identity server is reachable.",
+    "failedTitle": "Could not sign in",
+    "tagline": "Digital twin and voice assistant for the shop floor"
   },
   "errors": {
     "generic": "Something went wrong",
     "loadFailed": "Could not load data",
     "forbidden": "You do not have permission to open this page.",
     "notFound": "This page does not exist.",
-    "goHome": "Go to Twin"
+    "goHome": "Go to Fleet"
   },
   "nav": {
     "label": "Main navigation",
@@ -32,7 +39,20 @@
     "production": "Production",
     "energy": "Energy",
     "reports": "Reports",
-    "voice": "Assistant"
+    "voice": "Assistant",
+    "fleet": "Fleet",
+    "explorer": "Explorer",
+    "alarms": "Alarms",
+    "twinRegistry": "Registry",
+    "twin3d": "3D layout",
+    "models": "Models",
+    "modelRegistry": "Registry",
+    "benchmarks": "Benchmarks",
+    "explainQuality": "Explanation quality",
+    "orders": "Work orders",
+    "schedule": "Schedule",
+    "analytics": "Analytics",
+    "dashboards": "Dashboards"
   },
   "topbar": {
     "toggleNav": "Toggle navigation",
@@ -40,7 +60,8 @@
     "lightTheme": "Switch to light theme",
     "darkTheme": "Switch to dark theme",
     "userMenu": "User menu",
-    "logout": "Log out"
+    "logout": "Log out",
+    "home": "TwinVoice home"
   },
   "roles": {
     "technician": "Technician",
@@ -73,7 +94,8 @@
     }
   },
   "health": {
-    "label": "Health: {{value}}"
+    "label": "Health: {{value}}",
+    "anomaly": "Anomaly score: {{value}}"
   },
   "assetType": {
     "cnc_mill": "CNC mill",
@@ -351,7 +373,21 @@
       "rejected": "That could not be confirmed.",
       "expired": "The confirmation window closed.",
       "failed": "That did not go through."
-    }
+    },
+    "mic": {
+      "start": "Speak a command",
+      "stop": "Stop listening",
+      "unsupported": "This browser has no speech recognition. Type the command, or use Chrome or Edge to speak it.",
+      "listening": "Listening…",
+      "error": {
+        "denied": "Microphone access was blocked. Allow it in the browser to speak commands.",
+        "no-speech": "Didn’t catch that. Press the microphone and try again.",
+        "no-microphone": "No microphone was found.",
+        "failed": "Speech recognition stopped unexpectedly. Try again or type the command."
+      }
+    },
+    "speaking": "Reading the answer aloud",
+    "stopSpeaking": "Stop"
   },
   "reports": {
     "pageTitle": "Reports",
@@ -398,5 +434,501 @@
     "recipients": "Recipients",
     "lastRun": "Last run",
     "enabled": "Enabled"
+  },
+  "kpi": {
+    "formula": "Formula"
+  },
+  "sensor": {
+    "qualityGood": "Signal quality good",
+    "qualityBad": "Signal quality poor"
+  },
+  "rul": {
+    "none": "RUL —",
+    "tooltip": "Remaining useful life: {{value}} {{unit}}",
+    "unit": {
+      "cycles": "cycles",
+      "hours": "hours",
+      "h": "h",
+      "days": "days"
+    }
+  },
+  "fleet": {
+    "title": "Fleet",
+    "subtitle": "Every machine with its live status, health and remaining life.",
+    "search": "Search machines…",
+    "empty": "No machines match",
+    "statusFilter": "Filter by status",
+    "allStatuses": "All statuses",
+    "view": "View",
+    "cards": "Cards",
+    "table": "Table",
+    "machine": "Machine",
+    "status": "Status",
+    "health": "Health",
+    "rul": "RUL",
+    "alarms": "Alarms",
+    "activeAlarms": "Active alarms",
+    "alarmCount": "{{count}} active alarms",
+    "power": "Current power",
+    "openMachine": "Open {{name}}"
+  },
+  "machine": {
+    "tab": {
+      "live": "Live",
+      "prediction": "Prediction",
+      "timeline": "Timeline"
+    },
+    "backToFleet": "Back to fleet",
+    "notFound": "Machine “{{code}}” was not found.",
+    "noPrediction": "No prediction yet for this machine.",
+    "noTelemetry": "No telemetry received yet.",
+    "edge": "Edge",
+    "edgeHint": "The latest prediction was computed on the edge device.",
+    "edgeHintLatency": "The latest prediction was computed on the edge device in {{ms}} ms.",
+    "openDashboard": "Open dashboard",
+    "model3d": "3D model",
+    "show3d": "Show 3D model",
+    "hide3d": "Hide 3D model",
+    "confidence": {
+      "high": "High confidence",
+      "medium": "Medium confidence",
+      "low": "Low confidence"
+    },
+    "openExplorer": "Trends",
+    "timeline": {
+      "health": "Health index",
+      "rul": "Remaining life",
+      "rulTitle": "Remaining useful life ({{unit}})",
+      "band": "Shaded band: 90% conformal interval.",
+      "empty": "No predictions for this machine in the selected window.",
+      "alarms": "Alarms in window ({{count}})",
+      "noAlarms": "No alarms raised in this window.",
+      "source": {
+        "edge": "Edge: {{count}} predictions",
+        "server": "Server: {{count}} predictions"
+      }
+    }
+  },
+  "explorer": {
+    "title": "Telemetry explorer",
+    "subtitle": "Compare sensor series over time, with alarm raises and the model's health index alongside.",
+    "machine": "Machine",
+    "openMachine": "Open machine page →",
+    "sensors": "Sensors",
+    "showHealth": "Model health index",
+    "alarmsInRange": "{{count}} alarms in range",
+    "pickMachine": "Pick a machine to explore its telemetry.",
+    "pickSensors": "Tick one or more sensors to chart them.",
+    "noData": "No readings in this window. Is the simulator running?",
+    "noPredictions": "No model predictions in this window yet.",
+    "health": "Health index",
+    "warnHigh": "Warn high",
+    "alarmHigh": "Alarm high",
+    "warnLow": "Warn low",
+    "alarmLow": "Alarm low"
+  },
+  "alarms": {
+    "pageTitle": "Alarms",
+    "subtitle": "Threshold, adaptive and model alarms across the plant.",
+    "alarm": "Alarm",
+    "time": "Time",
+    "severityLabel": "Severity",
+    "title": "Title",
+    "valueThreshold": "Value / threshold",
+    "statusLabel": "Status",
+    "age": "Age",
+    "message": "Message",
+    "raisedAt": "Raised at",
+    "empty": "No alarms",
+    "acknowledge": "Acknowledge",
+    "shelve": "Shelve for 4 h",
+    "shelved": "Alarm shelved",
+    "acked": "{{count}} alarm(s) acknowledged",
+    "ackSelected": "Acknowledge {{count}} selected",
+    "severity": {
+      "critical": "Critical",
+      "serious": "Serious",
+      "warning": "Warning",
+      "info": "Info"
+    },
+    "status": {
+      "active": "Active",
+      "acknowledged": "Acknowledged",
+      "shelved": "Shelved",
+      "cleared": "Cleared"
+    }
+  },
+  "models": {
+    "title": "Model registry",
+    "subtitle": "Trained models, their stage and how they were built.",
+    "empty": "No models registered yet. Run training to create one.",
+    "name": "Name",
+    "version": "Version",
+    "task": "Task",
+    "algorithm": "Algorithm",
+    "stage": "Stage",
+    "trained": "Trained",
+    "action": "Action",
+    "promote": "Promote",
+    "promoteConfirm": "Promote {{name}} v{{version}} to production?",
+    "promoted": "Model promoted to production",
+    "back": "Back to models",
+    "notFound": "This model was not found.",
+    "assetType": "Asset type",
+    "dataset": "Dataset",
+    "window": "Window",
+    "stride": "Stride",
+    "horizon": "Horizon",
+    "artifact": "Artifact",
+    "onnx": "ONNX",
+    "onnxParity": "ONNX parity (max |Δ|)",
+    "noOnnx": "No ONNX export for this model",
+    "downloadOnnx": "Download ONNX",
+    "metrics": "Metrics",
+    "noMetrics": "No metrics recorded",
+    "split": "Split",
+    "metric": "Metric",
+    "value": "Value",
+    "importance": "Feature importance",
+    "noImportance": "No global importance computed for this model yet.",
+    "taskName": {
+      "anomaly": "Anomaly",
+      "failure": "Failure",
+      "rul": "RUL",
+      "survival": "Survival"
+    },
+    "stageName": {
+      "candidate": "Candidate",
+      "production": "Production",
+      "archived": "Archived"
+    },
+    "train": {
+      "button": "Train model",
+      "title": "Train a model",
+      "start": "Start training",
+      "source": "What to train",
+      "sourceName": {
+        "synthetic": "Asset-type RUL model",
+        "cmapss": "C-MAPSS benchmark (RUL)",
+        "ai4i": "AI4I 2020 benchmark (failure)"
+      },
+      "sourceHint": {
+        "synthetic": "Remaining useful life for one machine type, trained on the plant simulator’s data.",
+        "cmapss": "NASA turbofan run-to-failure data, scored on the official test engines.",
+        "ai4i": "Failure classification on the AI4I predictive-maintenance dataset."
+      },
+      "subset": "C-MAPSS subset",
+      "note": "Training runs on the worker and registers the result as a candidate. Promote it once its metrics look right.",
+      "workerDown": "The training worker is not reachable, so the job was not queued. Start the worker and try again.",
+      "step": {
+        "queued": "Queued",
+        "running": "Training",
+        "done": "Registered"
+      },
+      "queued": "Waiting for a training worker to pick up the job…",
+      "running": "Training on the worker. This can take a few minutes; you can close this dialog and keep working.",
+      "doneTitle": "Model trained",
+      "doneSubtitle": "Registered as a candidate. Review its metrics before promoting it to production.",
+      "openModel": "Open model",
+      "another": "Train another",
+      "failedTitle": "Training failed",
+      "failedUnknown": "The worker did not report a reason. Check the worker logs.",
+      "doneToast": "New model trained and registered",
+      "failedToast": "Model training failed",
+      "jobId": "Job {{id}}"
+    }
+  },
+  "benchmarks": {
+    "title": "Benchmarks",
+    "subtitle": "The PdM models scored on public datasets against the PRD targets, with a fixed seed.",
+    "run": "Run benchmark",
+    "runTitle": "Run a benchmark",
+    "startedToast": "Benchmark started",
+    "datasets": "Datasets",
+    "datasetsRequired": "Pick at least one dataset",
+    "seed": "Seed",
+    "quick": "Quick run",
+    "quickHint": "Fewer folds and trees: minutes instead of an hour, and less accurate.",
+    "empty": "No benchmark runs yet.",
+    "runs": "Runs",
+    "startedAt": "Started",
+    "statusLabel": "Status",
+    "gitSha": "Git SHA",
+    "duration": "Duration",
+    "results": "Results · {{date}}",
+    "report": "Report",
+    "reportTitle": "Benchmark report",
+    "running": "This run is still in progress. Results appear here when it finishes.",
+    "failed": "This run failed",
+    "noResults": "No results were recorded",
+    "dataset": "Dataset",
+    "metric": "Metric",
+    "value": "Value",
+    "target": "Target",
+    "verdictLabel": "Result",
+    "status": {
+      "running": "Running",
+      "done": "Done",
+      "failed": "Failed"
+    },
+    "verdict": {
+      "pass": "Pass",
+      "fail": "Fail",
+      "none": "No target"
+    }
+  },
+  "grafana": {
+    "assetTitle": "Dashboard · {{code}}",
+    "fleetTitle": "Fleet dashboard",
+    "subtitle": "Grafana panels over the telemetry, prediction and energy tables.",
+    "backToMachine": "Back to machine",
+    "openInGrafana": "Open in Grafana",
+    "unavailable": "Dashboards are unavailable right now — the Grafana service isn't responding.",
+    "unavailableShort": "Grafana isn't responding, so there is nothing to open"
+  },
+  "twin3d": {
+    "title": "3D plant layout",
+    "subtitle": "Every machine on the floor, coloured by the worse of its state and health.",
+    "legend": "Status colours",
+    "hint": "Drag to orbit, scroll to zoom, click a machine or its label to open it. Machines with open alarms pulse.",
+    "unavailable": "3D view unavailable: this browser has no WebGL.",
+    "plantAria": "3D layout of {{count}} machines",
+    "machineAria": "3D model of {{code}}, coloured by component health",
+    "components": "Components",
+    "noComponents": "No component health reported yet.",
+    "topDriver": "Top driver",
+    "noDriver": "No explanation yet"
+  },
+  "analytics": {
+    "oee": "OEE",
+    "actual": "Actual",
+    "actualEnergy": "Actual",
+    "anomalies": "Energy anomalies",
+    "asset": "Asset",
+    "attainment": "Attainment",
+    "availability": "Availability",
+    "baselineFitted": "Baseline refitted (R² {{r2}})",
+    "baselineNeeded": "Fit a baseline first — anomalies are measured against expected consumption.",
+    "breakdowns": "Breakdowns",
+    "cause": "Cause",
+    "cost": "Cost",
+    "cumulative": "Cumulative",
+    "cycleTime": "Cycle time distribution",
+    "deviation": "Deviation",
+    "downtime": "Downtime",
+    "downtimePareto": "Downtime Pareto",
+    "energy": "Energy",
+    "energyPerUnit": "Energy per unit",
+    "energySubtitle": "Consumption measured against what this output should have cost, not against last week.",
+    "energyTitle": "Energy analytics",
+    "expectedEnergy": "Expected",
+    "health": "Health",
+    "healthHint": "Asset health at the time of the anomaly",
+    "idleShare": "Idle energy share",
+    "intensity": "Consumption vs baseline",
+    "line": "Line",
+    "noAnomalies": "Consumption is within 3σ of the baseline.",
+    "noBaseline": "No baseline fitted",
+    "noDowntime": "No downtime recorded in this window.",
+    "noEnergy": "No energy readings in this window.",
+    "oeeTrend": "OEE trend",
+    "peakDemand": "Peak demand",
+    "performance": "Performance",
+    "pickScope": "Select",
+    "pickScopePrompt": "Select a plant, line or asset.",
+    "planned": "Planned",
+    "plant": "Plant",
+    "productionSubtitle": "OEE and reliability, with the inputs behind every number.",
+    "productionTitle": "Production analytics",
+    "productionVsPlan": "Production vs plan",
+    "quality": "Quality",
+    "refitBaseline": "Refit baseline",
+    "rejects": "Rejects",
+    "reliability": "Reliability",
+    "repairs": "Repairs",
+    "share": "Share",
+    "topConsumers": "Top consumers",
+    "units": "Units"
+  },
+  "explain": {
+    "auditFallback": "The generated wording failed its audit, so the verified template text is shown instead.",
+    "counterfactual": "What would change this",
+    "disagreement": "The two models disagree",
+    "disagreementDetail": "The glass-box model highlights different drivers than the production model, so treat this explanation with caution.",
+    "drivers": "Top drivers",
+    "failed": "This prediction has not been explained yet.",
+    "feedback": {
+      "disagreeTitle": "What does the explanation get wrong?",
+      "reason": "Reason",
+      "reasonPlaceholder": "What did you see that the model missed?",
+      "recorded": "Feedback recorded: {{verdict}}",
+      "submit": "Submit",
+      "suspectSensor": "Suspect sensor",
+      "suspectSensorHint": "Flagging a sensor lowers the confidence of predictions that use it for one hour.",
+      "suspectSensorPlaceholder": "Select a sensor you believe is misreading",
+      "thanks": "Thanks — your feedback was recorded",
+      "verdict": {
+        "agree": "Agree",
+        "disagree": "Disagree",
+        "unsure": "Unsure"
+      }
+    },
+    "feedbackPrompt": "Does this match what you see on the machine?",
+    "none": "No explanation yet — one is generated shortly after each prediction.",
+    "secondOpinion": "Glass-box second opinion",
+    "speak": "Read this aloud",
+    "title": "Why this prediction",
+    "stopSpeaking": "Stop reading"
+  },
+  "explainQuality": {
+    "title": "Explanation quality",
+    "subtitle": "How faithful and stable each model's attributions are, what drives it, and whether generated narration survives its audit.",
+    "pickModel": "Select a model",
+    "noModels": "No models registered yet. Train one from the model registry.",
+    "refresh": "Recompute",
+    "refreshQueued": "Recompute queued; the numbers update in a few seconds.",
+    "metrics": "Faithfulness and stability",
+    "noMetrics": "No quality metrics for this model yet. Press Recompute to calculate them from its bundle.",
+    "pdp": "Partial dependence of the top features",
+    "noPdp": "No partial dependence computed yet. Press Recompute.",
+    "outputRul": "Predicted remaining life",
+    "outputProbability": "Failure probability",
+    "passRate": "Narration audit pass rate",
+    "passRateHelp": "Narrations whose LLM wording passed rank, sign, numeric and vocabulary checks",
+    "audits": "Recent narration audits",
+    "failedCount": "{{count}} failed",
+    "noAudits": "No narrations have been audited for this model yet.",
+    "auditNote": "A failed audit is not an outage: the deterministic template text is shown instead.",
+    "llmOff": "LLM paraphrasing is off, so there is nothing to audit.",
+    "llmOffDetail": "Every narration shown is the deterministic template built directly from the attributions. Set TV_LLM_ENDPOINT to have an LLM rephrase it; each paraphrase is then audited here before it is shown.",
+    "col": {
+      "metric": "Metric",
+      "better": "Better",
+      "value": "Value",
+      "sample": "Evaluated on",
+      "computed": "Computed"
+    },
+    "better": {
+      "higher": "Higher ↑",
+      "lower": "Lower ↓"
+    },
+    "audit": {
+      "kind": "Kind",
+      "lang": "Lang",
+      "rank": "Rank",
+      "sign": "Sign",
+      "numbers": "Numbers",
+      "ok": "ok",
+      "drifted": "drifted",
+      "hallucinated": "Hallucinated",
+      "text": "Text shown"
+    },
+    "metric": {
+      "deletion_auc": {
+        "label": "Deletion AUC",
+        "help": "Remove the most important features first: a faithful explanation makes the prediction collapse quickly. 0 is ideal."
+      },
+      "insertion_auc": {
+        "label": "Insertion AUC",
+        "help": "Add the most important features back first: a faithful explanation recovers the prediction quickly. 1 is ideal."
+      },
+      "pgi": {
+        "label": "Prediction gap (important)",
+        "help": "How far the prediction moves when the top three features are perturbed by 10%."
+      },
+      "sensitivity_max": {
+        "label": "Max sensitivity",
+        "help": "Worst-case change of the attributions under a 5% input perturbation. Lower means a steadier explanation."
+      },
+      "sparsity": {
+        "label": "Sparsity",
+        "help": "Share of features carrying almost no attribution. Higher means a shorter, more readable explanation."
+      },
+      "truth_top1_agreement": {
+        "label": "Truth top-1 agreement",
+        "help": "On simulated data the true driver is known: how often it is ranked first."
+      },
+      "window_jaccard": {
+        "label": "Window stability",
+        "help": "Top-3 feature overlap between consecutive live explanations of the same machine."
+      }
+    }
+  },
+  "maintenance": {
+    "weight": {
+      "downtime_cost": "Downtime cost",
+      "failure_risk": "Failure risk",
+      "energy_cost": "Energy cost"
+    },
+    "addTask": "Add task step",
+    "adjusted": "Hand-adjusted",
+    "asPlanned": "As planned",
+    "asset": "Asset",
+    "assetRequired": "Pick an asset",
+    "cancelConfirm": "The order can no longer be edited or closed once cancelled.",
+    "cancelOrder": "Cancel order",
+    "cancelled": "Work order cancelled",
+    "close": "Close order",
+    "closeHint": "Closing publishes a maintenance reset to the machine, so its simulated damage is cleared.",
+    "closeTitle": "Close work order",
+    "closed": "Work order closed and damage reset",
+    "conflictLine": "Two orders share a line at the same time",
+    "conflictTech": "A technician is double-booked",
+    "conflictWarning": "{{n}} conflict(s) introduced by this change",
+    "conflicts": "{{n}} conflict(s) in the current plan",
+    "corrective": "Corrective",
+    "created": "Work order {{number}} created",
+    "description": "Description",
+    "duration": "Est. duration",
+    "export": "Export",
+    "exportB2mml": "Export B2MML",
+    "exportCsv": "Export CSV",
+    "exportJson": "Export JSON",
+    "exported": "Export downloaded",
+    "horizon": "Horizon",
+    "newOrder": "New work order",
+    "noSchedule": "No active schedule. Set a horizon and run the optimiser.",
+    "number": "Number",
+    "objectiveValue": "Objective",
+    "openOnly": "Open",
+    "optimise": "Optimise",
+    "optimised": "{{n}} orders scheduled in {{ms}} ms ({{status}})",
+    "outcome": "Outcome",
+    "outcomeRequired": "Describe what you found",
+    "pickAsset": "Select the machine",
+    "plannedEnd": "Planned end",
+    "plannedStart": "Planned start",
+    "plannedWindow": "Planned window",
+    "predictionCorrect": "The prediction was correct",
+    "predictive": "Predictive",
+    "preventive": "Preventive",
+    "priority": "Priority",
+    "priorityHint": "1 is most urgent",
+    "reassign": "Reassign",
+    "reassignHint": "Moving an order to another technician re-scores its risk and reports any conflict it creates.",
+    "risk": "Risk before slot",
+    "riskTradeoff": "Moving this slot",
+    "rulBasis": "Based on remaining life",
+    "schedule": "Schedule",
+    "scheduleSubtitle": "CP-SAT places each open order against technician availability, failure risk and the energy tariff.",
+    "scheduleTitle": "Maintenance schedule",
+    "scheduled": "Scheduled",
+    "start": "Start work",
+    "started": "Work order started",
+    "subtitle": "Work orders across the plant, with the risk of deferring each one.",
+    "taskDone": "Done",
+    "taskPending": "Not done yet",
+    "tasks": "Tasks",
+    "technician": "Technician",
+    "title": "Maintenance",
+    "titleField": "Title",
+    "tuneWeights": "Weights",
+    "type": "Type",
+    "unassigned": "Leave unassigned for the optimiser",
+    "unassignedRow": "Unassigned",
+    "unscheduled": "{{n}} order(s) could not be placed",
+    "unscheduledDetail": "No available technician has the required skills, or the order is longer than the horizon.",
+    "weightHint": "Raise failure risk to pull urgent work earlier; raise energy cost to push it into cheap tariff windows.",
+    "weights": "Objective weights"
   }
 }

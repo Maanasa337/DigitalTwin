@@ -6,7 +6,7 @@ from datetime import time as dt_time
 from typing import Any
 
 import pytest
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.ingest.consumer import (
@@ -161,3 +161,114 @@ def test_fact_tables_accept_the_rows_the_consumer_builds(session: Session, two_a
         {"id": asset_id},
     ).one()
     assert (produced[0], produced[1]) == (7, 1)
+
+
+# ── Edge predictions (M11) ────────────────────────────────────────────
+
+
+def _edge_message(model_version: str, **overrides: Any) -> Any:
+    from twinvoice_contracts.prediction import EdgePrediction
+
+    now = datetime.now(UTC)
+    body: dict[str, Any] = {
+        "id": str(uuid.uuid4()),
+        "asset_code": "cnc-01",
+        "time": now.isoformat(),
+        "window_start": now.isoformat(),
+        "window_end": now.isoformat(),
+        "model_version": model_version,
+        "health_index": 81.234,
+        "rul": {"point": 40.0, "low": 31.0, "high": 49.0, "unit": "d", "coverage": 0.9},
+        "confidence": {"label": "medium", "reasons": []},
+        "explanation": {
+            "method": "tree_shap",
+            "base_value": 55.0,
+            "attributions": [
+                {"feature": "spindle.vib_rms_mean", "label": "Spindle vibration mean", "value": 3.2,
+                 "unit": "mm/s", "contribution": -9.5, "direction": "lowering", "share": 0.7, "rank": 1},
+            ],
+        },
+        "latency_ms": {"infer_ms": 1.6, "explain_ms": 7.9},
+    }  # fmt: skip
+    body.update(overrides)
+    return EdgePrediction.model_validate(body)
+
+
+@pytest.fixture
+def edge_model(session: Session) -> Any:
+    from app.modules.pdm.service import ModelService
+
+    return ModelService(session).register_model(
+        None,
+        name="rul-synthetic-cnc_mill",
+        version="2026.09.21-100000",
+        task="rul",
+        algorithm="lightgbm",
+        dataset_ref="synthetic:cnc_mill",
+        dataset_hash="x",
+        feature_set={"features": ["spindle.vib_rms_mean"]},
+        artifact_uri="file:///data/models/x/model.pkl",
+    )
+
+
+def test_an_edge_prediction_is_stored_with_its_explanation(
+    session: Session, two_assets: list[str], edge_model: Any
+) -> None:
+    from app.ingest.edge_predictions import store_edge_prediction
+    from app.modules.pdm.models import Prediction
+    from app.modules.xai.models import Explanation
+
+    asset_id = _build_asset_map(session)["cnc-01"]
+    message = _edge_message("rul-synthetic-cnc_mill:2026.09.21-100000")
+    stored = store_edge_prediction(session, message, asset_id)
+
+    assert stored is not None
+    row = session.scalars(select(Prediction).where(Prediction.id == stored.prediction_id)).one()
+    assert row.source == "edge"
+    assert row.model_id == edge_model.id
+    assert row.latency_ms == 10  # 1.6 ms inference + 7.9 ms explanation
+    assert (row.rul_point, row.rul_low, row.rul_high, row.rul_unit) == (40.0, 31.0, 49.0, "d")
+    assert float(row.health_index) == pytest.approx(81.23)
+    explanation = session.scalars(select(Explanation).where(Explanation.prediction_id == row.id)).one()
+    assert explanation.method == "tree_shap"
+    assert explanation.attributions[0]["feature"] == "spindle.vib_rms_mean"
+    assert explanation.compute_ms == 8
+
+    # Mirrors infer.py's live payload, so the UI handles both the same way.
+    assert stored.live_payload["asset"] == "cnc-01"
+    assert stored.live_payload["rul_point"] == 40.0
+    assert stored.live_payload["source"] == "edge"
+
+    # The API reports it with source 'edge' (the machine page's Edge tag reads this).
+    from app.modules.pdm.schemas import PredictionOut
+
+    assert PredictionOut.from_prediction(row).source == "edge"
+
+
+def test_a_replayed_edge_prediction_is_not_stored_twice(
+    session: Session, two_assets: list[str], edge_model: Any
+) -> None:
+    from app.ingest.edge_predictions import store_edge_prediction
+    from app.modules.pdm.models import Prediction
+
+    asset_id = _build_asset_map(session)["cnc-01"]
+    message = _edge_message("rul-synthetic-cnc_mill:2026.09.21-100000")
+    assert store_edge_prediction(session, message, asset_id) is not None
+    assert store_edge_prediction(session, message, asset_id) is None
+    assert len(session.scalars(select(Prediction).where(Prediction.id == uuid.UUID(message.id))).all()) == 1
+
+
+def test_an_edge_prediction_for_an_unknown_model_is_dropped(session: Session, two_assets: list[str]) -> None:
+    from app.ingest.edge_predictions import store_edge_prediction
+
+    asset_id = _build_asset_map(session)["cnc-01"]
+    assert store_edge_prediction(session, _edge_message("rul-nope:1"), asset_id) is None
+
+
+def test_a_bare_model_name_resolves_to_its_production_model(session: Session, edge_model: Any) -> None:
+    from app.ingest.edge_predictions import resolve_model
+    from app.modules.pdm.service import ModelService
+
+    assert resolve_model(session, "rul-synthetic-cnc_mill") is None
+    ModelService(session).promote(None, edge_model.id)  # type: ignore[arg-type]
+    assert resolve_model(session, "rul-synthetic-cnc_mill") == edge_model

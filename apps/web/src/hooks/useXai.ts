@@ -8,6 +8,7 @@ import {
   fetchNarration,
   fetchNarrationAudits,
   fetchQualityMetrics,
+  refreshQualityMetrics,
   submitFeedback,
 } from '../api/xai';
 import type { FeedbackVerdict, NarrationKind } from '../api/types';
@@ -77,6 +78,25 @@ export function useXaiQualityMetrics(modelId: string | undefined) {
     queryKey: ['xai-quality', modelId],
     queryFn: () => fetchQualityMetrics(modelId!),
     enabled: Boolean(modelId),
+  });
+}
+
+/**
+ * The worker takes a few seconds per model, so the metrics and importance are re-read twice after
+ * the request is accepted rather than polled.
+ */
+export function useRefreshQualityMetrics(modelId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => refreshQualityMetrics(modelId!),
+    onSuccess: () => {
+      for (const delay of [5_000, 15_000]) {
+        setTimeout(() => {
+          void queryClient.invalidateQueries({ queryKey: ['xai-quality', modelId] });
+          void queryClient.invalidateQueries({ queryKey: ['global-importance', modelId] });
+        }, delay);
+      }
+    },
   });
 }
 

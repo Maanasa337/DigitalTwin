@@ -10,9 +10,10 @@ import { ChatPanel } from './ChatPanel';
 /**
  * The always-present assistant (§9.1: "voice is a first-class input, not an add-on").
  *
- * Push-to-talk is not wired: the speech service is a later module. What is here is the whole
- * command path a microphone would feed — router, tiers, read-back — driven by typed text, so the
- * button opens a console that already works rather than a placeholder.
+ * The console takes typed text or push-to-talk: the microphone in the chat input uses the browser's
+ * speech recognition (en-IN / hi-IN, following the app language) and feeds the same router, tiers and
+ * read-back as typing. Browsers without speech recognition get the typed path and a disabled mic
+ * that says why.
  */
 export function VoiceConsole() {
   const { t } = useTranslation();

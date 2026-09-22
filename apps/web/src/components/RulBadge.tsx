@@ -1,5 +1,6 @@
 import { Tag, Tooltip, theme } from 'antd';
 import type { CSSProperties } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { STATUS_PALETTE } from '../lib/status';
 
@@ -16,12 +17,14 @@ interface RulBadgeProps {
  * RUL badge: "38 cycles" bold + "(29–47, 90%)" secondary with urgency colour.
  */
 export function RulBadge({ point, low, high, unit = 'cycles', coverage, horizon = 100 }: RulBadgeProps) {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
+  const unitLabel = t(`rul.unit.${unit}`, { defaultValue: unit });
 
   if (point == null) {
     return (
-      <Tag style={{ color: token.colorTextQuaternary, borderColor: token.colorBorderSecondary }}>
-        RUL —
+      <Tag style={{ color: token.colorTextTertiary, borderColor: token.colorBorderSecondary }}>
+        {t('rul.none')}
       </Tag>
     );
   }
@@ -49,10 +52,10 @@ export function RulBadge({ point, low, high, unit = 'cycles', coverage, horizon 
       : '';
 
   return (
-    <Tooltip title={`Remaining Useful Life: ${point.toFixed(1)} ${unit}`}>
-      <span>
+    <Tooltip title={t('rul.tooltip', { value: point.toFixed(1), unit: unitLabel })}>
+      <span className="tabular">
         <span style={mainStyle}>{Math.round(point)}</span>
-        <span style={{ ...mainStyle, fontSize: 11, fontWeight: 400, marginLeft: 2 }}>{unit}</span>
+        <span style={{ ...mainStyle, fontSize: 11, fontWeight: 400, marginLeft: 2 }}>{unitLabel}</span>
         {intervalText && <span style={subStyle}>{intervalText}</span>}
       </span>
     </Tooltip>

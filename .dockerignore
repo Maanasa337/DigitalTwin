@@ -15,4 +15,8 @@ docs
 data/raw
 data/reports
 data/synthetic
+data/models
+data/benchmarks
+data/edge
+benchmarks/results
 *.md

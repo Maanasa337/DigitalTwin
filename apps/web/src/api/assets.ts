@@ -11,10 +11,16 @@ import type {
   Line,
   Page,
   PageParams,
+  Plant,
   Sensor,
 } from './types';
 
 export type AssetDocumentKind = 'aas' | 'dtdl' | 'ngsi-ld';
+
+export async function listPlants(params: PageParams = {}): Promise<Page<Plant>> {
+  const { data } = await http.get<Page<Plant>>('/plants', { params });
+  return data;
+}
 
 export async function listLines(params: PageParams & { plant_id?: string } = {}): Promise<Page<Line>> {
   const { data } = await http.get<Page<Line>>('/lines', { params });

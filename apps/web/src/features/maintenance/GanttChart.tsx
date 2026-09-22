@@ -3,6 +3,7 @@ import type { EChartsOption } from 'echarts';
 import ReactECharts from 'echarts-for-react';
 import { useMemo } from 'react';
 
+import { useChartTokens } from '../../app/theme';
 import type { ScheduleItem } from '../../api/types';
 
 export interface GanttRow {
@@ -36,6 +37,7 @@ export function GanttChart({
   onSelect,
 }: GanttChartProps) {
   const { token } = theme.useToken();
+  const chart = useChartTokens();
 
   const option = useMemo<EChartsOption>(() => {
     const rowIndex = new Map(rows.map((row, index) => [row.id, index]));
@@ -74,7 +76,7 @@ export function GanttChart({
         min: new Date(horizonStart).getTime(),
         max: new Date(horizonEnd).getTime(),
         axisLabel: { color: token.colorTextSecondary },
-        splitLine: { lineStyle: { color: token.colorBorderSecondary } },
+        splitLine: { lineStyle: { color: chart.gridline } },
       },
       yAxis: {
         type: 'category',
@@ -119,7 +121,7 @@ export function GanttChart({
         },
       ],
     } as EChartsOption;
-  }, [items, rows, labelFor, horizonStart, horizonEnd, token]);
+  }, [items, rows, labelFor, horizonStart, horizonEnd, token, chart]);
 
   return (
     <ReactECharts

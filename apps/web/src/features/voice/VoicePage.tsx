@@ -1,21 +1,25 @@
-import { Card, Col, Empty, Flex, List, Row, Segmented, Space, Table, Tag, Typography } from 'antd';
+import { Card, Col, Flex, List, Row, Segmented, Space, Table, Tag, Typography } from 'antd';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { IntentHelp, VoiceSession } from '../../api/types';
+import { EmptyState } from '../../components/EmptyState';
 import { PageHeader } from '../../components/PageHeader';
+import { useChangeLanguage } from '../../hooks/useLanguage';
 import { useIntents, useVoiceSession, useVoiceSessions } from '../../hooks/useVoice';
 import { formatDateTime } from '../../lib/format';
-import { useUiStore } from '../../store/uiStore';
+import { useUiStore, type Language } from '../../store/uiStore';
 import { ChatPanel } from './ChatPanel';
 import { TierBadge } from './TierBadge';
 import { Transcript } from './Transcript';
+import { useAskAssistant } from './useAskAssistant';
 
 /** `/voice`: the full console, the session history and the command cheat sheet (§M9 UI). */
 export default function VoicePage() {
   const { t } = useTranslation();
   const language = useUiStore((s) => s.language);
-  const setLanguage = useUiStore((s) => s.setLanguage);
+  const changeLanguage = useChangeLanguage();
+  const { ask } = useAskAssistant();
   const [selected, setSelected] = useState<string>();
 
   const sessions = useVoiceSessions();
@@ -28,9 +32,9 @@ export default function VoicePage() {
         title={t('voice.pageTitle')}
         subtitle={t('voice.pageSubtitle')}
         actions={
-          <Segmented
+          <Segmented<Language>
             value={language}
-            onChange={(value) => setLanguage(value as 'en' | 'hi')}
+            onChange={changeLanguage}
             options={[
               { label: 'English', value: 'en' },
               { label: 'हिन्दी', value: 'hi' },
@@ -86,9 +90,11 @@ export default function VoicePage() {
                       ]
                     : []),
                 ])}
+                // A chip in an old session asks again in the live console above.
+                onSuggestion={(label) => ask(label)}
               />
             ) : (
-              <Empty description={t('voice.selectSession')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              <EmptyState description={t('voice.selectSession')} />
             )}
           </Card>
         </Col>

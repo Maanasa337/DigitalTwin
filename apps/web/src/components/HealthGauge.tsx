@@ -1,5 +1,6 @@
 import { Tooltip, theme } from 'antd';
 import { type CSSProperties, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { healthLevel, STATUS_PALETTE } from '../lib/status';
 
@@ -15,6 +16,7 @@ interface HealthGaugeProps {
  * Shows tooltip with anomaly score if available.
  */
 export function HealthGauge({ health, size = 72, showLabel = true, anomalyScore }: HealthGaugeProps) {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const level = healthLevel(health);
   const color = STATUS_PALETTE[level].color;
@@ -45,14 +47,21 @@ export function HealthGauge({ health, size = 72, showLabel = true, anomalyScore 
 
   const tooltipText = useMemo(() => {
     const parts: string[] = [];
-    if (health != null) parts.push(`Health: ${health.toFixed(0)}%`);
-    if (anomalyScore != null) parts.push(`Anomaly: ${anomalyScore.toFixed(3)}`);
-    return parts.join(' · ') || 'No data';
-  }, [health, anomalyScore]);
+    if (health != null) parts.push(t('health.label', { value: `${health.toFixed(0)} %` }));
+    if (anomalyScore != null) parts.push(t('health.anomaly', { value: anomalyScore.toFixed(3) }));
+    return parts.join(' · ') || t('status.noData');
+  }, [health, anomalyScore, t]);
 
   return (
     <Tooltip title={tooltipText}>
-      <div style={containerStyle} role="meter" aria-valuenow={health ?? 0} aria-valuemin={0} aria-valuemax={100}>
+      <div
+        style={containerStyle}
+        role="meter"
+        aria-label={tooltipText}
+        aria-valuenow={health ?? 0}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
           {/* Background ring */}
           <circle
@@ -80,7 +89,7 @@ export function HealthGauge({ health, size = 72, showLabel = true, anomalyScore 
           />
         </svg>
         {showLabel && (
-          <span style={labelStyle}>
+          <span style={labelStyle} className="tabular" aria-hidden>
             {health != null ? Math.round(health) : '—'}
           </span>
         )}

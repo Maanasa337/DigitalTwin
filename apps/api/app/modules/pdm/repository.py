@@ -5,8 +5,8 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import ColumnElement, select, update
-from sqlalchemy.orm import Session
+from sqlalchemy import ColumnElement, func, select, update
+from sqlalchemy.orm import Session, aliased
 
 from app.common.pagination import PageParams
 from app.common.repository import CrudRepository
@@ -74,16 +74,21 @@ class PredictionRepository:
         end: datetime,
         limit: int = 1000,
     ) -> list[Prediction]:
+        """At most ``limit`` rows spread evenly over the range, oldest first.
+
+        A busy asset writes thousands of predictions a day (the edge scores every few seconds);
+        a plain LIMIT would return only the start of a long range, so every n-th row is kept.
+        """
+        in_range = (Prediction.asset_id == asset_id, Prediction.time >= start, Prediction.time < end)
+        total = self.session.scalar(select(func.count()).select_from(Prediction).where(*in_range)) or 0
+        step = -(-total // limit) if total > limit else 1
+        numbered = (
+            select(Prediction, func.row_number().over(order_by=Prediction.time).label("rn")).where(*in_range).subquery()
+        )
+        row = aliased(Prediction, numbered)
         return list(
             self.session.scalars(
-                select(Prediction)
-                .where(
-                    Prediction.asset_id == asset_id,
-                    Prediction.time >= start,
-                    Prediction.time < end,
-                )
-                .order_by(Prediction.time)
-                .limit(limit)
+                select(row).where((numbered.c.rn - 1) % step == 0).order_by(numbered.c.time).limit(limit)
             )
         )
 
@@ -102,8 +107,18 @@ class BenchmarkRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
 
-    def list_runs(self) -> list[BenchmarkRun]:
-        return list(self.session.scalars(select(BenchmarkRun).order_by(BenchmarkRun.started_at.desc()).limit(50)))
+    def get(self, run_id: uuid.UUID) -> BenchmarkRun | None:
+        return self.session.get(BenchmarkRun, run_id)
+
+    def list_runs(self, params: PageParams) -> tuple[list[BenchmarkRun], int]:
+        total = self.session.scalar(select(func.count()).select_from(BenchmarkRun)) or 0
+        rows = self.session.scalars(
+            select(BenchmarkRun)
+            .order_by(BenchmarkRun.started_at.desc(), BenchmarkRun.id)
+            .offset((params.page - 1) * params.size)
+            .limit(params.size)
+        )
+        return list(rows), total
 
     def create(self, run: BenchmarkRun) -> BenchmarkRun:
         self.session.add(run)

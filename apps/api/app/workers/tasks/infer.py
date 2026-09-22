@@ -1,7 +1,14 @@
-"""Celery beat task: periodic inference for all assets with a production model.
+"""Celery beat task: periodic server-side inference with the trained production models (M5).
 
-Pulls the latest telemetry window, runs anomaly/failure/RUL inference,
-writes a prediction row, patches Ditto, and publishes live updates.
+Every 30 s, each asset is scored by its production model (one bound to the asset, else the model for
+its asset type) through `app.modules.pdm.scoring`: the feature window is rebuilt from raw telemetry,
+the bundle's estimator gives RUL with its conformal interval (or calibrated failure probabilities),
+and its IsolationForest gives the health index. The prediction is stored, explained off the hot
+path, patched into Ditto and fanned out live.
+
+Edge first: an asset the edge runner scored within ``EDGE_FRESH_S`` is skipped, so the edge and the
+server never interleave two predictions for the same machine; if the edge goes quiet the server
+takes the asset over on the next tick.
 """
 
 from __future__ import annotations
@@ -17,190 +24,144 @@ from app.workers.celery_app import celery_app
 
 log = logging.getLogger(__name__)
 
+EDGE_FRESH_S = 120
+
 
 @celery_app.task(name="app.workers.tasks.infer.infer_all_assets", ignore_result=True)
 def infer_all_assets() -> None:
-    """Iterate over all assets that have a production model and run inference."""
+    """Score every active asset that has a production model and no fresh edge prediction."""
     from sqlalchemy import select
 
     from app.core.db import get_sessionmaker
     from app.modules.assets.models import Asset
-    from app.modules.pdm.models import Model
 
     session_factory = get_sessionmaker()
     with session_factory() as session:
-        # Find all assets with at least one production model
-        production_models = list(session.scalars(select(Model).where(Model.stage == "production")))
-        if not production_models:
-            return
-
-        assets = list(session.scalars(select(Asset).where(Asset.deleted_at.is_(None))))
-
-        for asset in assets:
-            try:
-                _infer_single_asset(session_factory, asset.id, asset.code, production_models)
-            except Exception:
-                log.exception("inference failed for asset %s", asset.code)
+        assets = [
+            (a.id, a.code, a.asset_type) for a in session.scalars(select(Asset).where(Asset.deleted_at.is_(None)))
+        ]
+    for asset_id, code, asset_type in assets:
+        try:
+            infer_asset(session_factory, asset_id, code, asset_type)
+        except Exception:
+            log.exception("inference failed for asset %s", code)
 
 
-def _infer_single_asset(
-    session_factory: Any,
-    asset_id: uuid.UUID,
-    asset_code: str,
-    production_models: list[Any],
-) -> None:
-    """Run inference pipeline for a single asset."""
-    from sqlalchemy import text
+def _edge_is_fresh(session: Any, asset_id: uuid.UUID, now: datetime) -> bool:
+    from sqlalchemy import select
 
-    from app.core.config import get_settings
-    from app.core.ditto import DittoClient
     from app.modules.pdm.models import Prediction
 
-    settings = get_settings()
-    start_time = time.monotonic()
+    latest_edge = session.scalar(
+        select(Prediction.time)
+        .where(
+            Prediction.asset_id == asset_id,
+            Prediction.source == "edge",
+            Prediction.time >= now - timedelta(seconds=EDGE_FRESH_S),
+        )
+        .limit(1)
+    )
+    return latest_edge is not None
+
+
+def _window_end(now: datetime) -> datetime:
+    """Snap to the bucket grid, so the explainer can rebuild exactly this window later."""
+    from app.modules.pdm.scoring import SAMPLE_PERIOD_S
+
+    epoch = int(now.timestamp())
+    return datetime.fromtimestamp(epoch - epoch % SAMPLE_PERIOD_S, tz=UTC)
+
+
+def infer_asset(session_factory: Any, asset_id: uuid.UUID, asset_code: str, asset_type: str) -> uuid.UUID | None:
+    """Score one asset; returns the stored prediction's id, or None when it was skipped."""
+    from app.modules.pdm import scoring
+    from app.modules.pdm.models import Prediction
+
+    started = time.monotonic()
+    now = datetime.now(UTC)
 
     with session_factory() as session:
-        # Pull latest telemetry window (last 10 minutes of 1-minute aggregates)
-        now = datetime.now(UTC)
-        window_end = now
-        window_start = now - timedelta(minutes=10)
+        if _edge_is_fresh(session, asset_id, now):
+            return None
+        model = scoring.select_model(session, asset_id, asset_type)
+        if model is None:
+            return None
+        loaded = scoring.load(model)
+        if loaded is None:
+            return None
+        window = scoring.telemetry_window(session, asset_id, loaded.spec, _window_end(now))
+        if window is None:
+            return None  # the asset has not reported enough of the window (stopped, or just started)
 
-        rows = (
-            session.execute(
-                text("""
-                SELECT sensor_id, bucket, avg, min, max, std, n
-                FROM telemetry_1m
-                WHERE sensor_id IN (
-                    SELECT id FROM sensors WHERE asset_id = :asset_id AND deleted_at IS NULL
-                )
-                AND bucket >= :start AND bucket < :end
-                ORDER BY bucket
-            """),
-                {"asset_id": asset_id, "start": window_start, "end": window_end},
-            )
-            .mappings()
-            .all()
-        )
-
-        if len(rows) < 5:
-            return  # Not enough data for inference
-
-        # Use the first production model (simplified — in practice, match by asset_type)
-        model = production_models[0]
-
-        # Build simple feature vector from aggregated telemetry
-        sensor_avgs: dict[uuid.UUID, list[float]] = {}
-        for row in rows:
-            sid = row["sensor_id"]
-            sensor_avgs.setdefault(sid, []).append(row["avg"] or 0.0)
-
-        # Compute basic stats per sensor
-        features: dict[str, float] = {}
-        for sid, values in sensor_avgs.items():
-            if not values:
-                continue
-            mean_val = sum(values) / len(values)
-            std_val = (sum((v - mean_val) ** 2 for v in values) / len(values)) ** 0.5
-            features[f"{sid}_mean"] = mean_val
-            features[f"{sid}_std"] = std_val
-
-        if not features:
-            return
-
-        # Simple anomaly score (normalized distance from typical values)
-        all_stds = [v for k, v in features.items() if k.endswith("_std")]
-        anomaly_score = sum(all_stds) / len(all_stds) if all_stds else 0.0
-
-        # Health index (inverse of anomaly)
-        health_index = max(0.0, min(100.0, 100.0 * (1.0 - min(anomaly_score / 10.0, 1.0))))
-
-        # Simple RUL estimation (placeholder — real model would use trained weights)
-        rul_point = max(1.0, 100.0 - anomaly_score * 20.0)
-        rul_low = max(1.0, rul_point * 0.7)
-        rul_high = rul_point * 1.3
-
-        # Confidence
-        n_sensors = len(sensor_avgs)
-        confidence_label = "high" if n_sensors >= 5 else ("medium" if n_sensors >= 3 else "low")
-        confidence_reasons: list[str] = []
-        if n_sensors < 5:
-            confidence_reasons.append("few_sensors")
-
-        elapsed_ms = int((time.monotonic() - start_time) * 1000)
+        x, imputed = scoring.feature_vector(loaded, window)
+        result = scoring.score(loaded, x)
+        scoring.qualify(result, window, imputed, len(loaded.feature_names))
+        rul = result.rul or {}
 
         prediction = Prediction(
             time=now,
             asset_id=asset_id,
             model_id=model.id,
-            window_start=window_start,
-            window_end=window_end,
-            health_index=round(health_index, 2),
-            anomaly_score=anomaly_score,
-            rul_point=rul_point,
-            rul_low=rul_low,
-            rul_high=rul_high,
-            rul_unit="cycles",
-            confidence_label=confidence_label,
-            confidence_reasons=confidence_reasons,
+            window_start=window.start,
+            window_end=window.end,
+            health_index=result.health_index,
+            anomaly_score=result.anomaly_score,
+            failure_probability_calibrated=result.failure_probability,
+            rul_point=rul.get("point"),
+            rul_low=rul.get("low"),
+            rul_high=rul.get("high"),
+            rul_unit=rul.get("unit"),
+            rul_coverage=round(rul["coverage"], 2) if rul.get("coverage") is not None else None,
+            confidence_label=result.confidence,
+            confidence_reasons=result.reasons,
             source="server",
-            latency_ms=elapsed_ms,
+            latency_ms=int((time.monotonic() - started) * 1000),
         )
         session.add(prediction)
         session.commit()
+        prediction_id = prediction.id
 
-        # M6: explaining costs more than inferring, so it runs as its own task off this path.
-        try:
-            from app.workers.tasks.explain import explain_prediction
+    # M6: explaining costs more than inferring, so it runs as its own task off this path.
+    try:
+        from app.workers.tasks.explain import explain_prediction
 
-            explain_prediction.delay(str(prediction.id))
-        except Exception:
-            log.debug("could not enqueue explanation for prediction %s", prediction.id)
+        explain_prediction.delay(str(prediction_id))
+    except Exception:
+        log.debug("could not enqueue explanation for prediction %s", prediction_id)
 
-        # Patch Ditto with prediction
-        try:
-            ditto = DittoClient(settings.ditto_url, settings.ditto_subject)
-            ditto.merge_thing(
-                f"twinvoice:{asset_code}",
-                {
-                    "features": {
-                        "prediction": {
-                            "properties": {
-                                "health_index": float(health_index),
-                                "rul_point": rul_point,
-                                "rul_low": rul_low,
-                                "rul_high": rul_high,
-                                "rul_unit": "cycles",
-                                "confidence": confidence_label,
-                                "time": now.isoformat(),
-                            }
-                        }
-                    }
-                },
-            )
-            ditto.close()
-        except Exception:
-            log.debug("ditto patch failed for prediction on %s", asset_code)
+    properties = {
+        "health_index": result.health_index,
+        "rul_point": rul.get("point"),
+        "rul_low": rul.get("low"),
+        "rul_high": rul.get("high"),
+        "rul_unit": rul.get("unit"),
+        "confidence": result.confidence,
+        "source": "server",
+        "time": now.isoformat(),
+    }
+    _publish(asset_code, properties)
+    return prediction_id
 
-        # Publish live update via Valkey
-        try:
-            import valkey
 
-            v = valkey.from_url(settings.valkey_url)
-            msg = json.dumps(
-                {
-                    "kind": "prediction",
-                    "payload": {
-                        "asset": asset_code,
-                        "health_index": float(health_index),
-                        "rul_point": rul_point,
-                        "rul_low": rul_low,
-                        "rul_high": rul_high,
-                        "confidence": confidence_label,
-                        "time": now.isoformat(),
-                    },
-                }
-            )
-            v.publish(f"live:{asset_code}", msg)
-            v.close()
-        except Exception:
-            log.debug("valkey publish failed for prediction on %s", asset_code)
+def _publish(asset_code: str, properties: dict[str, Any]) -> None:
+    """Ditto's prediction feature and the live channel carry the same fields as edge predictions."""
+    from app.core.config import get_settings
+    from app.core.ditto import DittoClient
+
+    settings = get_settings()
+    try:
+        ditto = DittoClient(settings.ditto_url, settings.ditto_subject)
+        ditto.merge_thing(f"twinvoice:{asset_code}", {"features": {"prediction": {"properties": properties}}})
+        ditto.close()
+    except Exception:
+        log.debug("ditto patch failed for prediction on %s", asset_code)
+
+    try:
+        import valkey
+
+        v = valkey.from_url(settings.valkey_url)
+        live = {"asset": asset_code, **{k: v for k, v in properties.items() if k != "rul_unit"}}
+        v.publish(f"live:{asset_code}", json.dumps({"kind": "prediction", "payload": live}))
+        v.close()
+    except Exception:
+        log.debug("valkey publish failed for prediction on %s", asset_code)

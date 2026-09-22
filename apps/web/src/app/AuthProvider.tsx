@@ -1,10 +1,13 @@
-import { Button, Result, Spin } from 'antd';
+import { ReloadOutlined, WarningFilled } from '@ant-design/icons';
+import { Button, Flex, Spin, theme, Typography } from 'antd';
 import type { KeycloakTokenParsed } from 'keycloak-js';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Role } from '../api/types';
+import { BrandMark } from '../components/BrandMark';
 import { authDisabled, getAccessToken, initAuth, keycloak, logout, ROLES } from '../lib/auth';
+import { STATUS_PALETTE } from '../lib/status';
 import { AuthContext, makeAuthValue, type AuthContextValue, type AuthUser } from './authContext';
 
 const DEV_USER: AuthUser = { sub: 'dev', name: 'Developer', email: null, roles: [...ROLES] };
@@ -52,25 +55,71 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   if (state.kind === 'loading') {
     return (
-      <div style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}>
-        <Spin size="large" tip={t('auth.signingIn')}>
-          <div style={{ width: 120, height: 80 }} />
-        </Spin>
-      </div>
+      <Splash>
+        <Flex vertical align="center" gap={12} role="status" aria-live="polite">
+          <Spin size="large" />
+          <Typography.Text type="secondary">{t('auth.signingIn')}</Typography.Text>
+        </Flex>
+      </Splash>
     );
   }
   if (state.kind === 'error') {
     return (
-      <Result
-        status="error"
-        title={t('auth.failed')}
-        extra={
-          <Button type="primary" onClick={() => window.location.reload()}>
+      <Splash>
+        <Flex vertical align="center" gap={12} role="alert" style={{ maxWidth: 360 }}>
+          <WarningFilled aria-hidden style={{ fontSize: 28, color: STATUS_PALETTE.critical.color }} />
+          <Typography.Text strong style={{ fontSize: 16 }}>
+            {t('auth.failedTitle')}
+          </Typography.Text>
+          <Typography.Text type="secondary">{t('auth.failed')}</Typography.Text>
+          <Button type="primary" icon={<ReloadOutlined />} autoFocus onClick={() => window.location.reload()}>
             {t('common.retry')}
           </Button>
-        }
-      />
+        </Flex>
+      </Splash>
     );
   }
   return <AuthContext.Provider value={state.value}>{children}</AuthContext.Provider>;
+}
+
+/** Full-screen brand card shown before the app shell exists (no router, no query client yet). */
+function Splash({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
+  const { token } = theme.useToken();
+  return (
+    <main
+      style={{
+        display: 'grid',
+        placeItems: 'center',
+        minHeight: '100vh',
+        padding: 16,
+        background: token.colorBgLayout,
+      }}
+    >
+      <Flex
+        vertical
+        align="center"
+        gap={24}
+        style={{
+          width: '100%',
+          maxWidth: 400,
+          padding: '40px 32px',
+          textAlign: 'center',
+          background: token.colorBgContainer,
+          border: `1px solid ${token.colorBorder}`,
+          borderRadius: 12,
+          boxShadow: token.boxShadowTertiary,
+        }}
+      >
+        <Flex vertical align="center" gap={8}>
+          <BrandMark size={48} wordmark={false} />
+          <Typography.Title level={1} style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>
+            TwinVoice
+          </Typography.Title>
+          <Typography.Text type="secondary">{t('auth.tagline')}</Typography.Text>
+        </Flex>
+        {children}
+      </Flex>
+    </main>
+  );
 }

@@ -1,4 +1,4 @@
-import { Card, Col, Empty, Flex, Row, Statistic, Table, theme } from 'antd';
+import { Card, Col, Flex, Row, Statistic, Table, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { EChartsOption } from 'echarts';
 import ReactECharts from 'echarts-for-react';
@@ -6,8 +6,10 @@ import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useChartTokens } from '../../app/theme';
 import type { AnalyticsScope, DowntimePareto } from '../../api/types';
 import { KpiTile } from '../../components/KpiTile';
+import { EmptyState } from '../../components/EmptyState';
 import { PageHeader } from '../../components/PageHeader';
 import { TimeRangePicker, useTimeRange } from '../../components/TimeRangePicker';
 import {
@@ -26,6 +28,7 @@ type ParetoRow = DowntimePareto['rows'][number];
 export default function ProductionPage() {
   const { t } = useTranslation();
   const { token } = theme.useToken();
+  const chart = useChartTokens();
   const { range, setRange } = useTimeRange('24h');
   const [scope, setScope] = useState<AnalyticsScope>('asset');
   const [scopeId, setScopeId] = useState<string>();
@@ -42,7 +45,7 @@ export default function ProductionPage() {
   const trendOption = useMemo<EChartsOption>(() => {
     const trend = oee?.trend ?? [];
     const series = (['oee', 'availability', 'performance', 'quality'] as const).map((key) => ({
-      name: t(`analytics.${key}`, key.toUpperCase()),
+      name: t(`analytics.${key}`),
       type: 'line' as const,
       smooth: true,
       showSymbol: false,
@@ -57,11 +60,11 @@ export default function ProductionPage() {
         type: 'value',
         max: 100,
         axisLabel: { formatter: '{value}%', color: token.colorTextSecondary },
-        splitLine: { lineStyle: { color: token.colorBorderSecondary } },
+        splitLine: { lineStyle: { color: chart.gridline } },
       },
       series,
     };
-  }, [oee, token, t]);
+  }, [oee, token, chart, t]);
 
   const paretoOption = useMemo<EChartsOption>(() => {
     const rows = pareto?.rows ?? [];
@@ -78,39 +81,39 @@ export default function ProductionPage() {
           type: 'value',
           name: 'hours',
           axisLabel: { color: token.colorTextSecondary },
-          splitLine: { lineStyle: { color: token.colorBorderSecondary } },
+          splitLine: { lineStyle: { color: chart.gridline } },
         },
         { type: 'value', max: 100, axisLabel: { formatter: '{value}%' }, splitLine: { show: false } },
       ],
       series: [
         {
           type: 'bar',
-          name: t('analytics.downtime', 'Downtime'),
+          name: t('analytics.downtime'),
           data: rows.map((r) => +(r.seconds / 3600).toFixed(2)),
           itemStyle: { color: token.colorError },
         },
         {
           type: 'line',
-          name: t('analytics.cumulative', 'Cumulative'),
+          name: t('analytics.cumulative'),
           yAxisIndex: 1,
           data: rows.map((r) => +(r.cumulative_share * 100).toFixed(1)),
           itemStyle: { color: token.colorWarning },
         },
       ],
     };
-  }, [pareto, token, t]);
+  }, [pareto, token, chart, t]);
 
   const paretoColumns: ColumnsType<ParetoRow> = [
-    { title: t('analytics.cause', 'Cause'), dataIndex: 'cause_code' },
+    { title: t('analytics.cause'), dataIndex: 'cause_code' },
     {
-      title: t('analytics.downtime', 'Downtime'),
+      title: t('analytics.downtime'),
       dataIndex: 'seconds',
       width: 130,
       align: 'right',
       render: (v: number) => formatDuration(v),
     },
     {
-      title: t('analytics.share', 'Share'),
+      title: t('analytics.share'),
       dataIndex: 'share',
       width: 100,
       align: 'right',
@@ -119,10 +122,10 @@ export default function ProductionPage() {
   ];
 
   return (
-    <div style={{ padding: 24 }}>
+    <>
       <PageHeader
-        title={t('analytics.productionTitle', 'Production analytics')}
-        subtitle={t('analytics.productionSubtitle', 'OEE and reliability, with the inputs behind every number.')}
+        title={t('analytics.productionTitle')}
+        subtitle={t('analytics.productionSubtitle')}
         actions={
           <>
             <ScopePicker
@@ -139,7 +142,7 @@ export default function ProductionPage() {
       />
 
       {!scopeId ? (
-        <Empty description={t('analytics.pickScopePrompt', 'Select a plant, line or asset.')} />
+        <EmptyState description={t('analytics.pickScopePrompt')} />
       ) : (
         <Flex vertical gap={16}>
           <Row gutter={[12, 12]}>
@@ -154,7 +157,7 @@ export default function ProductionPage() {
             </Col>
             <Col xs={12} md={6}>
               <KpiTile
-                title={t('analytics.availability', 'Availability')}
+                title={t('analytics.availability')}
                 value={oee?.availability}
                 unit="%"
                 digits={1}
@@ -163,7 +166,7 @@ export default function ProductionPage() {
             </Col>
             <Col xs={12} md={6}>
               <KpiTile
-                title={t('analytics.performance', 'Performance')}
+                title={t('analytics.performance')}
                 value={oee?.performance}
                 unit="%"
                 digits={1}
@@ -172,7 +175,7 @@ export default function ProductionPage() {
             </Col>
             <Col xs={12} md={6}>
               <KpiTile
-                title={t('analytics.quality', 'Quality')}
+                title={t('analytics.quality')}
                 value={oee?.quality}
                 unit="%"
                 digits={1}
@@ -181,13 +184,13 @@ export default function ProductionPage() {
             </Col>
           </Row>
 
-          <Card size="small" title={t('analytics.oeeTrend', 'OEE trend')} loading={isLoading}>
+          <Card size="small" title={t('analytics.oeeTrend')} loading={isLoading}>
             <ReactECharts option={trendOption} style={{ height: 300 }} notMerge />
           </Card>
 
           <Row gutter={[12, 12]}>
             <Col xs={24} lg={14}>
-              <Card size="small" title={t('analytics.downtimePareto', 'Downtime Pareto')}>
+              <Card size="small" title={t('analytics.downtimePareto')}>
                 {pareto && pareto.rows.length > 0 ? (
                   <>
                     <ReactECharts option={paretoOption} style={{ height: 280 }} notMerge />
@@ -201,14 +204,14 @@ export default function ProductionPage() {
                     />
                   </>
                 ) : (
-                  <Empty description={t('analytics.noDowntime', 'No downtime recorded in this window.')} />
+                  <EmptyState description={t('analytics.noDowntime')} />
                 )}
               </Card>
             </Col>
 
             <Col xs={24} lg={10}>
               <Flex vertical gap={12}>
-                <Card size="small" title={t('analytics.reliability', 'Reliability')}>
+                <Card size="small" title={t('analytics.reliability')}>
                   <Row gutter={16}>
                     <Col span={12}>
                       <Statistic
@@ -230,14 +233,14 @@ export default function ProductionPage() {
                     </Col>
                     <Col span={12}>
                       <Statistic
-                        title={t('analytics.breakdowns', 'Breakdowns')}
+                        title={t('analytics.breakdowns')}
                         value={reliability?.breakdowns ?? 0}
                         valueStyle={{ fontSize: 18 }}
                       />
                     </Col>
                     <Col span={12}>
                       <Statistic
-                        title={t('analytics.repairs', 'Repairs')}
+                        title={t('analytics.repairs')}
                         value={reliability?.repairs ?? 0}
                         valueStyle={{ fontSize: 18 }}
                       />
@@ -245,25 +248,25 @@ export default function ProductionPage() {
                   </Row>
                 </Card>
 
-                <Card size="small" title={t('analytics.productionVsPlan', 'Production vs plan')}>
+                <Card size="small" title={t('analytics.productionVsPlan')}>
                   <Row gutter={16}>
                     <Col span={12}>
                       <Statistic
-                        title={t('analytics.actual', 'Actual')}
+                        title={t('analytics.actual')}
                         value={plan?.actual ?? 0}
                         valueStyle={{ fontSize: 22 }}
                       />
                     </Col>
                     <Col span={12}>
                       <Statistic
-                        title={t('analytics.planned', 'Planned')}
+                        title={t('analytics.planned')}
                         value={plan?.planned ?? 0}
                         valueStyle={{ fontSize: 22 }}
                       />
                     </Col>
                     <Col span={12}>
                       <Statistic
-                        title={t('analytics.attainment', 'Attainment')}
+                        title={t('analytics.attainment')}
                         value={plan?.attainment ?? 0}
                         precision={1}
                         suffix="%"
@@ -272,7 +275,7 @@ export default function ProductionPage() {
                     </Col>
                     <Col span={12}>
                       <Statistic
-                        title={t('analytics.rejects', 'Rejects')}
+                        title={t('analytics.rejects')}
                         value={plan?.reject ?? 0}
                         valueStyle={{ fontSize: 18, color: token.colorError }}
                       />
@@ -284,7 +287,7 @@ export default function ProductionPage() {
           </Row>
 
           {plan && plan.cycle_time_histogram.length > 0 && (
-            <Card size="small" title={t('analytics.cycleTime', 'Cycle time distribution')}>
+            <Card size="small" title={t('analytics.cycleTime')}>
               <ReactECharts
                 option={{
                   grid: { left: 48, right: 16, top: 16, bottom: 40 },
@@ -297,7 +300,7 @@ export default function ProductionPage() {
                   yAxis: {
                     type: 'value',
                     axisLabel: { color: token.colorTextSecondary },
-                    splitLine: { lineStyle: { color: token.colorBorderSecondary } },
+                    splitLine: { lineStyle: { color: chart.gridline } },
                   },
                   series: [
                     {
@@ -317,6 +320,6 @@ export default function ProductionPage() {
           )}
         </Flex>
       )}
-    </div>
+    </>
   );
 }

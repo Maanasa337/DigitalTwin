@@ -6,7 +6,6 @@ import {
   Card,
   DatePicker,
   Descriptions,
-  Empty,
   Flex,
   Popover,
   Slider,
@@ -18,6 +17,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ObjectiveWeights, ScheduleItem } from '../../api/types';
+import { EmptyState } from '../../components/EmptyState';
 import { PageHeader } from '../../components/PageHeader';
 import { useApiError } from '../../hooks/useApiError';
 import {
@@ -59,7 +59,7 @@ export default function SchedulePage() {
 
   const rows: GanttRow[] = useMemo(() => {
     const assigned = (technicians?.items ?? []).map((tech) => ({ id: tech.id, label: tech.name }));
-    return [...assigned, { id: 'unassigned', label: t('maintenance.unassignedRow', 'Unassigned') }];
+    return [...assigned, { id: 'unassigned', label: t('maintenance.unassignedRow') }];
   }, [technicians, t]);
 
   const runOptimise = () => {
@@ -72,7 +72,7 @@ export default function SchedulePage() {
       {
         onSuccess: (result) => {
           void message.success(
-            t('maintenance.optimised', '{{n}} orders scheduled in {{ms}} ms ({{status}})', {
+            t('maintenance.optimised', {
               n: result.items.length,
               ms: result.solve_ms ?? 0,
               status: result.solver_status ?? 'unknown',
@@ -91,7 +91,7 @@ export default function SchedulePage() {
         onSuccess: (result) => {
           if (result.conflicts.length > 0) {
             void message.warning(
-              t('maintenance.conflictWarning', '{{n}} conflict(s) introduced by this change', {
+              t('maintenance.conflictWarning', {
                 n: result.conflicts.length,
               }),
             );
@@ -107,7 +107,7 @@ export default function SchedulePage() {
       {(Object.keys(DEFAULT_WEIGHTS) as (keyof ObjectiveWeights)[]).map((key) => (
         <div key={key}>
           <Typography.Text style={{ fontSize: 12 }}>
-            {t(`maintenance.weight.${key}`, key.replace(/_/g, ' '))}: {weights[key].toFixed(1)}
+            {t(`maintenance.weight.${key}`)}: {weights[key].toFixed(1)}
           </Typography.Text>
           <Slider
             min={0}
@@ -119,22 +119,16 @@ export default function SchedulePage() {
         </div>
       ))}
       <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-        {t(
-          'maintenance.weightHint',
-          'Raise failure risk to pull urgent work earlier; raise energy cost to push it into cheap tariff windows.',
-        )}
+        {t('maintenance.weightHint')}
       </Typography.Text>
     </Flex>
   );
 
   return (
-    <div style={{ padding: 24 }}>
+    <>
       <PageHeader
-        title={t('maintenance.scheduleTitle', 'Maintenance schedule')}
-        subtitle={t(
-          'maintenance.scheduleSubtitle',
-          'CP-SAT places each open order against technician availability, failure risk and the energy tariff.',
-        )}
+        title={t('maintenance.scheduleTitle')}
+        subtitle={t('maintenance.scheduleSubtitle')}
         tags={
           schedule?.solver_status ? (
             <Tag color={schedule.solver_status === 'OPTIMAL' ? 'green' : 'blue'}>
@@ -149,8 +143,8 @@ export default function SchedulePage() {
               value={horizon}
               onChange={(v) => v && v[0] && v[1] && setHorizon([v[0], v[1]])}
             />
-            <Popover content={weightsPopover} title={t('maintenance.weights', 'Objective weights')} trigger="click">
-              <Button>{t('maintenance.tuneWeights', 'Weights')}</Button>
+            <Popover content={weightsPopover} title={t('maintenance.weights')} trigger="click">
+              <Button>{t('maintenance.tuneWeights')}</Button>
             </Popover>
             <Button
               type="primary"
@@ -158,7 +152,7 @@ export default function SchedulePage() {
               loading={optimise.isPending}
               onClick={runOptimise}
             >
-              {t('maintenance.optimise', 'Optimise')}
+              {t('maintenance.optimise')}
             </Button>
           </>
         }
@@ -169,13 +163,10 @@ export default function SchedulePage() {
           <Alert
             type="warning"
             showIcon
-            message={t('maintenance.unscheduled', '{{n}} order(s) could not be placed', {
+            message={t('maintenance.unscheduled', {
               n: schedule.unscheduled.length,
             })}
-            description={t(
-              'maintenance.unscheduledDetail',
-              'No available technician has the required skills, or the order is longer than the horizon.',
-            )}
+            description={t('maintenance.unscheduledDetail')}
           />
         )}
 
@@ -183,7 +174,7 @@ export default function SchedulePage() {
           <Alert
             type="error"
             showIcon
-            message={t('maintenance.conflicts', '{{n}} conflict(s) in the current plan', {
+            message={t('maintenance.conflicts', {
               n: schedule.conflicts.length,
             })}
             description={
@@ -191,8 +182,8 @@ export default function SchedulePage() {
                 {schedule.conflicts.map((conflict, index) => (
                   <Typography.Text key={index} style={{ fontSize: 13 }}>
                     {conflict.kind === 'line'
-                      ? t('maintenance.conflictLine', 'Two orders share a line at the same time')
-                      : t('maintenance.conflictTech', 'A technician is double-booked')}
+                      ? t('maintenance.conflictLine')
+                      : t('maintenance.conflictTech')}
                     : {conflict.orders.map((id) => orderLabels.get(id) ?? id).join(' · ')}
                   </Typography.Text>
                 ))}
@@ -213,38 +204,32 @@ export default function SchedulePage() {
                 onSelect={(item) => setSelectedOrder(item.work_order_id)}
               />
               <Descriptions size="small" column={{ xs: 1, sm: 2, md: 4 }} style={{ marginTop: 12 }}>
-                <Descriptions.Item label={t('maintenance.scheduled', 'Scheduled')}>
+                <Descriptions.Item label={t('maintenance.scheduled')}>
                   {schedule.items.length}
                 </Descriptions.Item>
-                <Descriptions.Item label={t('maintenance.objectiveValue', 'Objective')}>
+                <Descriptions.Item label={t('maintenance.objectiveValue')}>
                   {schedule.objective_value?.toFixed(2) ?? '—'}
                 </Descriptions.Item>
-                <Descriptions.Item label={t('maintenance.adjusted', 'Hand-adjusted')}>
+                <Descriptions.Item label={t('maintenance.adjusted')}>
                   {schedule.items.filter((i) => i.manually_adjusted).length}
                 </Descriptions.Item>
-                <Descriptions.Item label={t('maintenance.horizon', 'Horizon')}>
+                <Descriptions.Item label={t('maintenance.horizon')}>
                   {dayjs(schedule.horizon_start).format('DD MMM')} –{' '}
                   {dayjs(schedule.horizon_end).format('DD MMM')}
                 </Descriptions.Item>
               </Descriptions>
             </>
           ) : (
-            <Empty
-              description={t(
-                'maintenance.noSchedule',
-                'No active schedule. Set a horizon and run the optimiser.',
-              )}
+            <EmptyState
+              description={t('maintenance.noSchedule')}
             />
           )}
         </Card>
 
         {schedule && schedule.items.length > 0 && (
-          <Card size="small" title={t('maintenance.reassign', 'Reassign')}>
+          <Card size="small" title={t('maintenance.reassign')}>
             <Typography.Paragraph type="secondary" style={{ fontSize: 13 }}>
-              {t(
-                'maintenance.reassignHint',
-                'Moving an order to another technician re-scores its risk and reports any conflict it creates.',
-              )}
+              {t('maintenance.reassignHint')}
             </Typography.Paragraph>
             <Flex wrap gap={8}>
               {schedule.items.map((item) => (
@@ -282,6 +267,6 @@ export default function SchedulePage() {
       </Flex>
 
       <WorkOrderDrawer workOrderId={selectedOrder} onClose={() => setSelectedOrder(null)} />
-    </div>
+    </>
   );
 }

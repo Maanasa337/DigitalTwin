@@ -1372,3 +1372,21 @@ Jobs: `lint` (ruff, mypy, eslint, tsc), `licences` (pip-licenses + license-check
 | NFR-* | M0 + CI | licence gate, observability, accessibility, i18n |
 
 Every PRD functional requirement maps to exactly one primary module; two are explicitly deferred (FR-PA-05) or optional (FR-EDGE-04, FR-VN-12) as marked in the PRD priorities.
+
+---
+
+## 13. Implementation Notes (deviations from this plan, 21–22 Sep 2026)
+
+| Area | Plan | As built | Why |
+|---|---|---|---|
+| Benchmark runner (FR-PM-09) | `benchmarks/` runners | Library in `packages/pdm/src/twinvoice_pdm/benchmark/`; `benchmarks/run.py` is a thin CLI; Celery `workers/tasks/benchmark.py` for `POST /benchmarks/run` | CLI and worker run the same code (principle 5) |
+| Model artifacts | MLflow file store | Bundle directory `data/models/{name}/{version}/` (`model.pkl`, `model.onnx`, `booster.txt`, `bundle.json` with feature spec, conformal half-width, isotonic thresholds, anomaly baseline) | Edge needs a dependency-light artifact; no MLflow server |
+| Conformal on edge | CV+ | Single split-conformal half-width stored in `bundle.json` | ONNX cannot carry CV+ fold models |
+| Simulator RUL unit | cycles/hours | Days (`rul_unit = "d"`) | Keeps values small enough for float32 ONNX parity ≤ 1e-4 |
+| 3D (FR-DT-06/07) | CC0 glTF in `public/models/` | Procedural React Three Fiber meshes in `apps/web/src/three/machines/`, mesh names = component codes; lazy-loaded chunk | No binary assets, no licence risk |
+| Edge ingest | not specified | `app/ingest/edge_predictions.py` in the ingest consumer subscribes `twinvoice/pred/+`, writes `predictions(source='edge')` + `explanations(tree_shap)`, patches Ditto, publishes `live:{asset}` | Reuses the existing consumer |
+| Grafana (FR-MM-05) | Keycloak roles | Anonymous Viewer behind nginx at `/grafana/`, datasource user `grafana_ro` (migration `0010_grafana_ro`); dashboards `tv-fleet`, `tv-asset` provisioned from `infra/grafana/` | Iframe-friendly; ports bound to 127.0.0.1 |
+| Login | Keycloak default theme | Custom login theme `infra/keycloak/themes/twinvoice` (extends `keycloak.v2`) | Matches §9 tokens without handling passwords in app code |
+| Anomaly health index | `100 × (1 − clip(score_norm))` | `score_norm = clip((raw − q95_baseline) / (1 − q95_baseline))` (`twinvoice_pdm.anomaly.normalise_anomaly`) | Normalising by dividing by q95 put healthy machines at health ≈ 0 |
+
+Still open: the 30 s server inference job (`workers/tasks/infer.py`) does not yet score with the production bundles; the Prometheus server + system dashboard (NFR-OBS) are not in compose; MetroPT-3 detection lead time is 0 h.

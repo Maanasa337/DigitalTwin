@@ -1,5 +1,5 @@
 import { DownloadOutlined, PlusOutlined, ScheduleOutlined } from '@ant-design/icons';
-import { App, Button, Card, Flex, Segmented, Select, Table, Tag } from 'antd';
+import { App, Button, Card, Dropdown, Flex, Segmented, Select, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -48,7 +48,7 @@ export default function MaintenancePage() {
     try {
       const blob = await exportWorkOrders(format, { status });
       downloadBlob(blob, `work-orders.${format === 'b2mml' ? 'xml' : format}`);
-      void message.success(t('maintenance.exported', 'Export downloaded'));
+      void message.success(t('maintenance.exported'));
     } catch (err) {
       onError(err);
     }
@@ -56,13 +56,13 @@ export default function MaintenancePage() {
 
   const columns: ColumnsType<WorkOrder> = [
     {
-      title: t('maintenance.number', 'Number'),
+      title: t('maintenance.number'),
       dataIndex: 'number',
       width: 120,
       render: (v: number) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{workOrderNumber(v)}</span>,
     },
     {
-      title: t('maintenance.titleField', 'Title'),
+      title: t('maintenance.titleField'),
       dataIndex: 'title',
       ellipsis: true,
       render: (v: string, r) => (
@@ -75,7 +75,7 @@ export default function MaintenancePage() {
       ),
     },
     {
-      title: t('maintenance.type', 'Type'),
+      title: t('maintenance.type'),
       dataIndex: 'type',
       width: 110,
       render: (v: WorkOrderType) => (
@@ -85,31 +85,31 @@ export default function MaintenancePage() {
       ),
     },
     {
-      title: t('maintenance.priority', 'Priority'),
+      title: t('maintenance.priority'),
       dataIndex: 'priority',
       width: 90,
       render: (v: number) => <PriorityTag priority={v} />,
     },
     {
-      title: t('common.status', 'Status'),
+      title: t('common.status'),
       dataIndex: 'status',
       width: 120,
       render: (v: WorkOrderStatus) => <StatusTagWo status={v} />,
     },
     {
-      title: t('maintenance.plannedStart', 'Planned'),
+      title: t('maintenance.plannedStart'),
       dataIndex: 'planned_start',
       width: 170,
       render: (v: string | null) => formatDateTime(v),
     },
     {
-      title: t('maintenance.technician', 'Technician'),
+      title: t('maintenance.technician'),
       dataIndex: 'technician_id',
       width: 150,
       render: (v: string | null) => (v ? (technicianNames.get(v) ?? '—') : '—'),
     },
     {
-      title: t('maintenance.risk', 'Risk'),
+      title: t('maintenance.risk'),
       dataIndex: 'risk_before_slot',
       width: 100,
       align: 'right',
@@ -118,28 +118,30 @@ export default function MaintenancePage() {
   ];
 
   return (
-    <div style={{ padding: 24 }}>
+    <>
       <PageHeader
-        title={t('maintenance.title', 'Maintenance')}
-        subtitle={t('maintenance.subtitle', 'Work orders across the plant, with the risk of deferring each one.')}
+        title={t('maintenance.title')}
+        subtitle={t('maintenance.subtitle')}
         actions={
           <>
-            <Select
-              value="csv"
-              style={{ width: 150 }}
-              onChange={(v) => void handleExport(v as 'csv' | 'json' | 'b2mml')}
-              suffixIcon={<DownloadOutlined />}
-              options={[
-                { value: 'csv', label: t('maintenance.exportCsv', 'Export CSV') },
-                { value: 'json', label: t('maintenance.exportJson', 'Export JSON') },
-                { value: 'b2mml', label: t('maintenance.exportB2mml', 'Export B2MML') },
-              ]}
-            />
+            <Dropdown
+              trigger={['click']}
+              menu={{
+                items: [
+                  { key: 'csv', label: t('maintenance.exportCsv') },
+                  { key: 'json', label: t('maintenance.exportJson') },
+                  { key: 'b2mml', label: t('maintenance.exportB2mml') },
+                ],
+                onClick: ({ key }) => void handleExport(key as 'csv' | 'json' | 'b2mml'),
+              }}
+            >
+              <Button icon={<DownloadOutlined />}>{t('maintenance.export')}</Button>
+            </Dropdown>
             <Button icon={<ScheduleOutlined />} onClick={() => navigate('/maintenance/schedule')}>
-              {t('maintenance.schedule', 'Schedule')}
+              {t('maintenance.schedule')}
             </Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreating(true)}>
-              {t('maintenance.newOrder', 'New work order')}
+              {t('maintenance.newOrder')}
             </Button>
           </>
         }
@@ -154,14 +156,14 @@ export default function MaintenancePage() {
               setPage(1);
             }}
             options={[
-              { value: 'open', label: t('maintenance.openOnly', 'Open') },
-              { value: 'all', label: t('common.all', 'All') },
+              { value: 'open', label: t('maintenance.openOnly') },
+              { value: 'all', label: t('common.all') },
             ]}
           />
           <Select
             allowClear
             style={{ minWidth: 150 }}
-            placeholder={t('common.status', 'Status')}
+            placeholder={t('common.status')}
             value={status}
             onChange={(v) => {
               setStatus(v);
@@ -175,7 +177,7 @@ export default function MaintenancePage() {
           <Select
             allowClear
             style={{ minWidth: 150 }}
-            placeholder={t('maintenance.type', 'Type')}
+            placeholder={t('maintenance.type')}
             value={type}
             onChange={(v) => {
               setType(v);
@@ -191,7 +193,7 @@ export default function MaintenancePage() {
             showSearch
             optionFilterProp="label"
             style={{ minWidth: 190 }}
-            placeholder={t('maintenance.technician', 'Technician')}
+            placeholder={t('maintenance.technician')}
             value={technicianId}
             onChange={(v) => {
               setTechnicianId(v);
@@ -223,6 +225,6 @@ export default function MaintenancePage() {
 
       <WorkOrderDrawer workOrderId={selected} onClose={() => setSelected(null)} />
       <CreateWorkOrderModal open={creating} onClose={() => setCreating(false)} />
-    </div>
+    </>
   );
 }

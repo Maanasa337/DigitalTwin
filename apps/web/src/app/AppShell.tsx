@@ -14,6 +14,7 @@ export function AppShell() {
   const wide = screens.xl ?? true;
   const tablet = screens.md ?? true;
   const border = `1px solid ${token.colorBorder}`;
+  const siderCollapsed = wide ? navCollapsed : true;
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -25,11 +26,11 @@ export function AppShell() {
           <Layout.Sider
             width={220}
             collapsedWidth={64}
-            collapsed={wide ? navCollapsed : true}
+            collapsed={siderCollapsed}
             trigger={null}
             style={{ borderInlineEnd: border, position: 'sticky', top: 56, height: 'calc(100vh - 56px)' }}
           >
-            <SideNav />
+            <SideNav collapsed={siderCollapsed} />
           </Layout.Sider>
         )}
         <Layout.Content style={{ padding: tablet ? 24 : 16, paddingBottom: tablet ? 24 : 88, minWidth: 0 }}>

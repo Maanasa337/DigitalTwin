@@ -1,6 +1,8 @@
 {
   "realm": "twinvoice",
   "displayName": "TwinVoice",
+  "displayNameHtml": "<span class=\"tv-wordmark\">Twin<b>Voice</b></span>",
+  "loginTheme": "twinvoice",
   "enabled": true,
   "sslRequired": "none",
   "registrationAllowed": false,

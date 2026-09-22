@@ -1,0 +1,12 @@
+*
+!packages/contracts
+!packages/pdm
+!packages/xai
+!apps/edge/pyproject.toml
+!apps/edge/uv.lock
+!apps/edge/edge
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/tests

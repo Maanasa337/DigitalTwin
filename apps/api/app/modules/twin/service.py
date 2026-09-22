@@ -30,6 +30,7 @@ from app.modules.twin.schemas import (
     TreeComponent,
     TreeLine,
     TreePlant,
+    TreePosition,
     TwinOut,
     TwinTree,
 )
@@ -195,6 +196,8 @@ class TwinService:
                     fidelity_level=asset.fidelity_level,
                     health=machine_health(weighted),
                     components=tree_components,
+                    position=_position(asset.position),
+                    model_3d_path=asset.model_3d_path,
                 )
             )
 
@@ -290,3 +293,13 @@ class TwinService:
         return CommandResult(
             command_id=command_id, command=request.command, status=ack["status"], error=ack.get("error")
         )
+
+
+def _position(raw: dict[str, Any] | None) -> TreePosition | None:
+    """A stored position, or None when it is absent or malformed (the UI then lays the asset out itself)."""
+    if not raw:
+        return None
+    try:
+        return TreePosition.model_validate(raw)
+    except ValueError:
+        return None

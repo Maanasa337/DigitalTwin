@@ -152,3 +152,5 @@ class QualityMetricsOut(BaseModel):
     metrics: list[QualityMetricOut]
     narration_audit_pass_rate: float | None = None
     narration_audit_count: int = 0
+    # Audits exist only for LLM paraphrases; without an LLM every narration is the template itself.
+    llm_enabled: bool = False

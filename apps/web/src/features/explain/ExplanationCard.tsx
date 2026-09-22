@@ -1,13 +1,16 @@
 import {
   ExperimentOutlined,
   InfoCircleOutlined,
+  MutedOutlined,
   SoundOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
-import { Alert, Card, Divider, Flex, Popover, Skeleton, Tag, Tooltip, Typography, theme } from 'antd';
+import { Alert, Button, Card, Divider, Flex, Popover, Skeleton, Tag, Tooltip, Typography, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 
 import { EmptyState } from '../../components/EmptyState';
+import { useSensors } from '../../hooks/useAssets';
+import { useSpeechSynthesis } from '../../hooks/useSpeech';
 import { useCounterfactuals, useExplanation, useNarration } from '../../hooks/useXai';
 import { AttributionWaterfall } from './AttributionWaterfall';
 import { CounterfactualTable } from './CounterfactualTable';
@@ -16,15 +19,19 @@ import { ReasonCardPanel } from './ReasonCardPanel';
 
 interface ExplanationCardProps {
   explanationId?: string;
+  /** The explained asset; its sensors feed the "suspect sensor" feedback option. */
+  assetId?: string;
+  /** Overrides the sensors loaded for `assetId`. */
   sensors?: { id: string; name: string }[];
+  /** Overrides the browser's speech synthesis for the read-aloud button. */
   onSpeak?: (text: string) => void;
 }
 
 /**
  * The M6 explanation panel: narration, attribution waterfall, glass-box second opinion,
- * reason card, counterfactual and feedback.
+ * reason card, counterfactual and feedback. The narration can be read aloud in the app language.
  */
-export function ExplanationCard({ explanationId, sensors, onSpeak }: ExplanationCardProps) {
+export function ExplanationCard({ explanationId, assetId, sensors, onSpeak }: ExplanationCardProps) {
   const { t, i18n } = useTranslation();
   const { token } = theme.useToken();
   const lang = i18n.language === 'hi' ? 'hi' : 'en';
@@ -32,16 +39,15 @@ export function ExplanationCard({ explanationId, sensors, onSpeak }: Explanation
   const { data: explanation, isLoading, isError } = useExplanation(explanationId);
   const { data: narration } = useNarration(explanationId, 'why', lang);
   const { data: counterfactuals } = useCounterfactuals(explanationId);
+  const assetSensors = useSensors(sensors ? undefined : assetId);
+  const speech = useSpeechSynthesis();
 
   if (!explanationId) {
     return (
       <Card size="small">
         <EmptyState
           icon={<ExperimentOutlined />}
-          description={t(
-            'explain.none',
-            'No explanation yet — one is generated shortly after each prediction.',
-          )}
+          description={t('explain.none')}
         />
       </Card>
     );
@@ -60,7 +66,7 @@ export function ExplanationCard({ explanationId, sensors, onSpeak }: Explanation
       <Card size="small">
         <EmptyState
           icon={<ExperimentOutlined />}
-          description={t('explain.failed', 'This prediction has not been explained yet.')}
+          description={t('explain.failed')}
         />
       </Card>
     );
@@ -68,13 +74,15 @@ export function ExplanationCard({ explanationId, sensors, onSpeak }: Explanation
 
   const agreement = explanation.agreement;
   const auditFailed = narration?.audit && !narration.audit.passed;
+  const speaking = speech.speaking === explanation.id;
+  const canSpeak = Boolean(onSpeak) || speech.supported;
 
   return (
     <Card
       size="small"
       title={
         <Flex align="center" gap={8} wrap>
-          <span>{t('explain.title', 'Why this prediction')}</span>
+          <span>{t('explain.title')}</span>
           <Tag style={{ marginInlineEnd: 0 }}>{explanation.method.replace(/_/g, ' ')}</Tag>
           {explanation.compute_ms != null && (
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -84,13 +92,20 @@ export function ExplanationCard({ explanationId, sensors, onSpeak }: Explanation
         </Flex>
       }
       extra={
-        narration && onSpeak ? (
-          <Tooltip title={t('explain.speak', 'Read this aloud')}>
-            <SoundOutlined
-              role="button"
-              aria-label={t('explain.speak', 'Read this aloud')}
-              onClick={() => onSpeak(narration.final_text)}
-              style={{ cursor: 'pointer', color: token.colorPrimary }}
+        narration && canSpeak ? (
+          <Tooltip title={t(speaking ? 'explain.stopSpeaking' : 'explain.speak')}>
+            <Button
+              type="text"
+              size="small"
+              icon={speaking ? <MutedOutlined /> : <SoundOutlined />}
+              aria-label={t(speaking ? 'explain.stopSpeaking' : 'explain.speak')}
+              aria-pressed={speaking}
+              onClick={() => {
+                if (onSpeak) onSpeak(narration.final_text);
+                else if (speaking) speech.stop();
+                else speech.speak(narration.final_text, explanation.id);
+              }}
+              style={{ color: token.colorPrimary }}
             />
           </Tooltip>
         ) : null
@@ -104,10 +119,7 @@ export function ExplanationCard({ explanationId, sensors, onSpeak }: Explanation
             </Typography.Paragraph>
             {auditFailed && (
               <Tooltip
-                title={t(
-                  'explain.auditFallback',
-                  'The generated wording failed its audit, so the verified template text is shown instead.',
-                )}
+                title={t('explain.auditFallback')}
               >
                 <InfoCircleOutlined style={{ color: token.colorWarning, marginTop: 4 }} />
               </Tooltip>
@@ -120,22 +132,19 @@ export function ExplanationCard({ explanationId, sensors, onSpeak }: Explanation
             type="warning"
             showIcon
             icon={<WarningOutlined />}
-            message={t('explain.disagreement', 'The two models disagree')}
-            description={t(
-              'explain.disagreementDetail',
-              'The glass-box model highlights different drivers than the production model, so treat this explanation with caution.',
-            )}
+            message={t('explain.disagreement')}
+            description={t('explain.disagreementDetail')}
           />
         )}
 
         <div>
           <Flex justify="space-between" align="center" style={{ marginBottom: 8 }}>
             <Typography.Text type="secondary" style={{ fontSize: 12, textTransform: 'uppercase' }}>
-              {t('explain.drivers', 'Top drivers')}
+              {t('explain.drivers')}
             </Typography.Text>
             {agreement && (
               <Popover
-                title={t('explain.secondOpinion', 'Glass-box second opinion')}
+                title={t('explain.secondOpinion')}
                 content={
                   <Flex vertical gap={4} style={{ maxWidth: 280 }}>
                     <Typography.Text style={{ fontSize: 12 }}>
@@ -174,7 +183,7 @@ export function ExplanationCard({ explanationId, sensors, onSpeak }: Explanation
                 type="secondary"
                 style={{ fontSize: 12, textTransform: 'uppercase', display: 'block', marginBottom: 8 }}
               >
-                {t('explain.counterfactual', 'What would change this')}
+                {t('explain.counterfactual')}
               </Typography.Text>
               <CounterfactualTable counterfactuals={counterfactuals} />
             </div>
@@ -184,9 +193,9 @@ export function ExplanationCard({ explanationId, sensors, onSpeak }: Explanation
         <Divider style={{ margin: 0 }} />
         <Flex justify="space-between" align="center" wrap gap={8}>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {t('explain.feedbackPrompt', 'Does this match what you see on the machine?')}
+            {t('explain.feedbackPrompt')}
           </Typography.Text>
-          <FeedbackButtons explanationId={explanation.id} sensors={sensors} />
+          <FeedbackButtons explanationId={explanation.id} sensors={sensors ?? assetSensors.data} />
         </Flex>
       </Flex>
     </Card>

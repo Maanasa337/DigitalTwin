@@ -11,11 +11,17 @@ import {
   listAssets,
   listFailureModes,
   listLines,
+  listPlants,
   retireAsset,
 } from '../api/assets';
 import type { AssetClone, AssetCreate, AssetType } from '../api/types';
 
+const PLANTS_PARAMS = { size: 100 };
 const LINES_PARAMS = { size: 100 };
+
+export function usePlants() {
+  return useQuery({ queryKey: ['assets', 'plants', PLANTS_PARAMS], queryFn: () => listPlants(PLANTS_PARAMS) });
+}
 
 export function useLines() {
   return useQuery({ queryKey: ['assets', 'lines', LINES_PARAMS], queryFn: () => listLines(LINES_PARAMS) });
